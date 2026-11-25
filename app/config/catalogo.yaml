@@ -1,0 +1,375 @@
+# =====================================================================
+# CATÁLOGO DEL BOLETÍN METAREA VI
+# Todo el vocabulario y los textos fijos del boletín viven acá.
+# Se puede editar sin tocar el código (en docker-compose se monta como
+# volumen). Cada término tiene su versión en español (es) y en inglés (en).
+# Los valores por defecto replican los boletines emitidos hasta ahora;
+# donde difieren de la OMM, hay un comentario "REVISAR".
+# =====================================================================
+
+encabezado:
+  es:
+    id: "WWST01 SABM"
+    lineas_fijas_1: ["1:31:06:01:00", "SEGURIDAD", "BOLETIN METEOROLOGICO PARA NAVEGANTES - METAREA 6 -"]
+    lineas_fijas_2: ["SERVICIO METEOROLOGICO NACIONAL", "HORA Y FECHA EN REFERENCIA AL TIEMPO UNIVERSAL COORDINADO (UTC),", "PRESION EN HPA, ESCALA BEAUFORT PARA VIENTO Y ALTURA DE OLAS EN METROS."]
+    parte1_con_avisos: "1 PARTE AVISO DE TEMPORAL:"
+    parte1_sin_avisos: ["1 PARTE", "NO HAY AVISOS"]
+    parte2: "2 PARTE SINOPSIS GENERAL A LAS {hora}UTC"
+    parte3: "3 PARTE PRONOSTICO DE LAS {ini} UTC VALIDO HASTA LAS {fin} UTC DEL DIA {fecha_fin}"
+    costas: "ZONAS COSTERAS:"
+    oceanicas: "AREAS OCEANICAS:"
+  en:
+    id: "WWST02 SABM"
+    lineas_fijas_1: ["1:31:06:01:00", "SECURITE", "WEATHER BULLETIN FOR SHIPPING - METAREA 6-"]
+    lineas_fijas_2: ["NATIONAL WEATHER SERVICE", "DATE AND TIME UNIVERSAL TIME COORDINATED - UTC", "PRESSURE HPA", "BEAUFORT SCALE WINDS AND WAVE HEIGHT IN METERS"]
+    parte1_con_avisos: "PART 1 GALE WARNING:"
+    parte1_sin_avisos: ["PART 1", "NO WARNINGS"]
+    parte2: "PART 2 GENERAL SYNOPSIS AT {hora}UTC"
+    parte3: "PART 3 FORECAST ISSUED {ini} UTC VALID UNTIL {fin} UTC {fecha_fin}"
+    costas: "COASTAL AREAS:"
+    oceanicas: "OCEANIC AREAS:"
+  pie: ["-----------------------------------------------------------------", "NNNN="]
+  separador_combinado: "%"
+  # Renglones en blanco entre secciones (como en los boletines emitidos).
+  renglones_en_blanco:
+    antes_parte2: 2
+    antes_parte3: 2
+    antes_oceanicas: 1
+    antes_pie: 1
+  # Caracteres de control de telecomunicaciones (SOH al inicio, ETX después
+  # de NNNN=) que agregaba el sistema anterior. Activar solo si el canal de
+  # transmisión los necesita.
+  caracteres_control: false
+
+# ---------------------------------------------------------------------
+# ZONAS (orden = orden de salida). "aviso_*" es el nombre usado dentro
+# de los avisos de temporal.
+# ---------------------------------------------------------------------
+zonas:
+  costeras:
+    - {id: rdp_int,  es: "RIO DE LA PLATA INTERIOR", en: "INNER RIO DE LA PLATA", aviso_es: "RIO DE LA PLATA INTERIOR", aviso_en: "INNER RIO DE LA PLATA", alias: [interior, rio de la plata interior]}
+    - {id: rdp_ext,  es: "RIO DE LA PLATA EXTERIOR", en: "OUTER RIO DE LA PLATA", aviso_es: "RIO DE LA PLATA EXTERIOR", aviso_en: "OUTER RIO DE LA PLATA", alias: [exterior, rio de la plata exterior]}
+    - {id: uruguay,  es: "COSTA SUDESTE DEL URUGUAY", en: "URUGUAY SOUTH EAST COASTS", aviso_es: "COSTA SUDESTE DEL URUGUAY", aviso_en: "URUGUAY SOUTH EAST COASTS", alias: [uruguay, costa sudeste, costa sudeste del uruguay]}
+    - {id: mdp,      es: "COSTA MAR DEL PLATA(36º17S - 38º30S)", en: "MAR DEL PLATA COASTS(36º17S - 38º30S)", aviso_es: "COSTA MAR DEL PLATA", aviso_en: "MAR DEL PLATA COASTS", alias: [mar del plata, costa mar del plata]}
+    - {id: bblanca,  es: "RINCON BAHIA BLANCA(38º30S - 41ºS)", en: "RINCON BAHIA BLANCA COASTS(38º30S - 41ºS)", aviso_es: "RINCON BAHIA BLANCA", aviso_en: "RINCON BAHIA BLANCA COASTS", alias: [bahia, bahia blanca, rincon]}
+    - {id: valdes,   es: "COSTA PENINSULA DE VALDES(41ºS - 45ºS)", en: "PENINSULA DE VALDES COASTS(41ºS - 45ºS)", aviso_es: "COSTA PENINSULA DE VALDES", aviso_en: "PENINSULA DE VALDES COASTS", alias: [peninsula, peninsula valdes]}
+    - {id: sanjorge, es: "GOLFO DE SAN JORGE(45ºS - 48ºS)", en: "GOLFO DE SAN JORGE COASTS(45ºS - 48ºS)", aviso_es: "GOLFO DE SAN JORGE", aviso_en: "GOLFO DE SAN JORGE COASTS", alias: [golfo, golfo san jorge]}
+    - {id: patsur,   es: "COSTA PATAGONIA SUR(48ºS - 54ºS)", en: "SOUTH PATAGONIA COASTS(48ºS - 54ºS)", aviso_es: "COSTA PATAGONIA SUR", aviso_en: "SOUTH PATAGONIA COASTS", alias: [patagonia sur]}
+    - {id: findm,    es: "COSTA FIN DEL MUNDO(54ºS - 55ºS)", en: "FIN DEL MUNDO COASTS(54ºS - 55ºS)", aviso_es: "COSTA FIN DEL MUNDO", aviso_en: "FIN DEL MUNDO COASTS", alias: [fin del mundo]}
+    - {id: malvinas, es: "COSTA DE ISLAS MALVINAS", en: "ISLAS MALVINAS COASTS", aviso_es: "COSTA DE ISLAS MALVINAS", aviso_en: "ISLAS MALVINAS COASTS", alias: [malvinas, islas malvinas]}
+  oceanicas:
+    - {id: norte,    es: "AREA NORTE (35S- 40S Y 20W- 55W)", en: "NORTH AREA (35S- 40S AND 20W- 55W)", alias: [area norte]}
+    - {id: cestre,   es: "AREA CENTRO ESTE (40S- 50S Y 20W- 40W)", en: "CENTRAL EAST AREA (40S- 50S AND 20W- 40W)", alias: [centro este]}
+    - {id: coeste,   es: "AREA CENTRO OESTE (40S- 50S Y 40W- 60W)", en: "CENTRAL WEST AREA (40S- 50S AND 40W- 60W)", alias: [centro oeste]}
+    - {id: sudeste,  es: "AREA SUDESTE (50S- 60S Y 20W- 40W)", en: "SOUTH EAST AREA (50S- 60S AND 20W- 40W)", alias: [area sudeste]}
+    - {id: sudoeste, es: "AREA SUDOESTE (50S- 60S Y 40W- 60W)", en: "SOUTH WEST AREA (50S- 60S AND 40W- 60W)", alias: [area sudoeste]}
+    - {id: drake,    es: "AREA PASAJE DE DRAKE (55S- 60S Y 60W- 67W)", en: "DRAKE AREA (55S- 60S AND 60W- 67W)", alias: [drake, pasaje de drake]}
+
+# ---------------------------------------------------------------------
+# SUBDIVISIÓN DE ZONAS
+# ---------------------------------------------------------------------
+subdivision:
+  relaciones:   # clave: etiqueta en pantalla / texto es / texto en
+    N: {ui: "al norte de", es: "N DE", en: "N OF"}
+    S: {ui: "al sur de",   es: "S DE", en: "S OF"}
+    E: {ui: "al este de",  es: "E DE", en: "E OF"}
+    W: {ui: "al oeste de", es: "W DE", en: "W OF"}
+  union: " - "
+  coordenadas: {es: "({lat1}- {lat2} Y {lon1}- {lon2})", en: "({lat1}- {lat2} AND {lon1}- {lon2})"}
+  resto: {es: "RESTO DEL AREA", en: "REST OF THE AREA"}
+  # «NE del área», «SW del área»… REVISAR: no hay boletines emitidos con esta forma.
+  cuadrante: {es: "{c} DEL AREA", en: "{c} OF THE AREA"}
+  cuadrantes: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+# ---------------------------------------------------------------------
+# VIENTO
+# ---------------------------------------------------------------------
+viento:
+  # Términos que usan los pronosticadores en texto claro → número Beaufort.
+  # REVISAR: tabla tentativa, deducida de boletines emitidos. Mientras
+  # "confirmada" sea false, la app muestra un aviso en cada generación.
+  escala:
+    confirmada: false
+    valores:
+      LEVES: 3
+      MODERADOS: 4
+      REGULARES: 5
+      FUERTES: 6
+      MUY_FUERTES: 7
+      TEMPORAL: 8
+      TEMPORAL_FUERTE: 9
+  direcciones: ["SECTOR N", "SECTOR E", "SECTOR S", "SECTOR W", "N", "NE", "E", "SE", "S", "SW", "W", "NW", "VRB"]
+  cambios: ["BACK", "VEER", "INCR", "DECR"]
+  tempo: "TEMPO"
+  rafagas:
+    con: {es: "CON RAFAGAS", en: "WITH GUSTS"}
+    intensidad: {es: "RAFAGAS CON INTENSIDAD {n}", en: "GUST WITH {n} INTENSITY"}   # REVISAR: inglés poco natural, heredado
+  hora: {es: "EL {h}", en: "BY {h}"}
+
+# ---------------------------------------------------------------------
+# FENÓMENOS
+# En español el calificativo va después del fenómeno ("LLUVIAS AISLADAS"),
+# en inglés antes ("ISOL RAIN").
+# ---------------------------------------------------------------------
+fenomenos:
+  lista:
+    SH:          {es: "SH", en: "SH"}
+    LLUVIAS:     {es: "LLUVIAS", en: "RAIN"}
+    LLOVIZNAS:   {es: "LLOVIZNAS", en: "DRIZZLE"}
+    TORMENTAS:   {es: "TORMENTAS", en: "STORMS"}            # REVISAR: OMM usa TSTM
+    NEVADAS:     {es: "NEVADAS", en: "SNOW FALL"}
+    AGUANIEVE:   {es: "LLUVIA Y NIEVE MEZCLADA", en: "RAIN AND SNOW MIXTURE"}
+    GRANIZO:     {es: "GRANIZO", en: "HAIL"}
+    SH_NIEVE:    {es: "SH DE NIEVE", en: "SNOW SH"}           # REVISAR
+    SH_GRANIZO:  {es: "SH DE GRANIZO", en: "HAIL SH"}         # REVISAR
+    NIEBLAS:     {es: "NIEBLAS", en: "FOG"}
+    NEBLINAS:    {es: "NEBLINAS", en: "MIST"}
+    BANCOS_NIEBLA: {es: "BANCOS DE NIEBLA", en: "FOG PATCHES"}  # REVISAR
+    INESTABLE:   {es: "INESTABLE", en: "UNSTABLE"}
+  probabilidad:
+    "":          {es: "", en: ""}
+    PROB:        {es: "PROB DE", en: "PROB OF"}
+    BAJA:        {es: "BAJA PROB DE", en: "LOW PROB OF"}
+    DESMEJORANDO: {es: "DESMEJORANDO CON PROB DE", en: "DETERIORATING WITH PROB OF"}  # REVISAR
+  calificativo:
+    "":            {es: "", en: ""}
+    AISLADAS:      {es: "AISLADAS", en: "ISOL"}
+    INTERMITENTES: {es: "INTERMITENTES", en: "INTERMITTENT"}
+    FUERTES:       {es: "FUERTES", en: "HVY"}
+    DISPERSAS:     {es: "DISPERSAS", en: "SCT"}
+    OCASIONALES:   {es: "OCASIONALES", en: "OCNL"}
+  # "despues: true" = en el texto va DESPUÉS de la evolución
+  # (MEJORANDO DURANTE LA TARDE); si no, antes (A PARTIR DE LA MAÑANA MEJORANDO).
+  momento:
+    "":                {es: "", en: ""}
+    DESDE_MADRUGADA:   {es: "A PARTIR DE LA MADRUGADA", en: "STARTING EARLY MORNING"}
+    DESDE_MANANA:      {es: "A PARTIR DE LA MAÑANA", en: "STARTING MORNING"}      # REVISAR: los boletines viejos decían EARLY MORNING
+    DESDE_TARDE:       {es: "A PARTIR DE LA TARDE", en: "STARTING EVENING"}       # REVISAR: OMM "afternoon" = tarde
+    DESDE_NOCHE:       {es: "A PARTIR DE LA NOCHE", en: "STARTING NIGHT"}
+    FINAL_PERIODO:     {es: "HACIA EL FINAL DEL PERIODO", en: "TOWARDS THE END OF THE PERIOD"}
+    DURANTE_MADRUGADA: {es: "DURANTE LA MADRUGADA", en: "DURING EARLY MORNING", despues: true}
+    DURANTE_MANANA:    {es: "DURANTE LA MAÑANA", en: "DURING THE MORNING", despues: true}
+    DURANTE_TARDE:     {es: "DURANTE LA TARDE", en: "DURING THE EVENING", despues: true}  # REVISAR: ídem TARDE
+    DURANTE_NOCHE:     {es: "DURANTE LA NOCHE", en: "DURING THE NIGHT", despues: true}
+    DESDE_MEDIODIA:    {es: "A PARTIR DEL MEDIODIA", en: "STARTING MIDDAY"}                 # REVISAR
+    HACIA_MADRUGADA:   {es: "HACIA LA MADRUGADA", en: "TOWARDS EARLY MORNING", despues: true}  # REVISAR
+    HACIA_MANANA:      {es: "HACIA LA MAÑANA", en: "TOWARDS MORNING", despues: true}          # REVISAR
+    HACIA_TARDE:       {es: "HACIA LA TARDE", en: "TOWARDS EVENING", despues: true}           # como en WWST03
+    HACIA_NOCHE:       {es: "HACIA LA NOCHE", en: "TOWARDS NIGHT", despues: true}             # REVISAR
+  evolucion:
+    "":            {es: "", en: ""}
+    MEJORANDO:     {es: "MEJORANDO", en: "IMPR"}
+    DISIPANDOSE:   {es: "DISIPANDOSE", en: "DISSIPATING"}
+    MEJ_TEMP:      {es: "MEJORAMIENTOS TEMPORARIOS", en: "SPELLS OF GOOD WEATHER"}
+  conector:
+    "":     {es: "", en: ""}
+    LUEGO:  {es: "LUEGO", en: "NXT"}
+  # Texto cuando el pronosticador marca "sin fenómenos significativos".
+  # Vacío replica los boletines actuales (ej. "VRB 3 VIS BUENA").
+  sin_fenomenos: {es: "", en: ""}
+
+# ---------------------------------------------------------------------
+# VISIBILIDAD
+# ---------------------------------------------------------------------
+visibilidad:
+  prefijo: "VIS"
+  valores:
+    BUENA:    {es: "BUENA", en: "GOOD"}
+    REGULAR:  {es: "REGULAR", en: "MODERATE"}
+    MALA:     {es: "MALA", en: "POOR"}
+    MUY_MALA: {es: "MUY MALA", en: "VERY POOR"}
+  # Forma: VIS <v1> [A <hasta>] [OCNL <ocnl>]   ej. VIS BUENA A REGULAR OCNL MALA
+  hasta: {es: "A", en: "TO"}
+  ocnl: {es: "OCNL", en: "OCNL"}
+
+# ---------------------------------------------------------------------
+# AVISOS DE TEMPORAL
+# ---------------------------------------------------------------------
+avisos:
+  causas:
+    GRADIENTE:    {ui: "Fuerte gradiente bárico", es: "FUERTE GRADIENTE BARICO {d}", en: "STRONG BARIC GRADIENT {d}"}
+    CFNT:         {ui: "Frente frío (posición)", es: "FRENTE FRIO LINEA {d}", en: "COLD FRONT AT {d}"}
+    WFNT:         {ui: "Frente cálido (posición)", es: "FRENTE CALIENTE LINEA {d}", en: "WARM FRONT AT {d}"}
+    DEPRESION:    {ui: "Depresión (presión y posición)", es: "DEPRESION {d}", en: "LOW {d}"}
+    CICLOGENESIS: {ui: "Ciclogénesis (posición)", es: "CICLOGENESIS EN {d}", en: "CYCLOGENESIS AT {d}"}
+    OTRA:         {ui: "Otra (texto libre, se traduce con IA)", es: "{d}", en: "{d}"}
+  verbo:
+    futuro:   {ui: "Provocará", es: "PROVOCARA", en: "WILL PROVOKE"}
+    presente: {ui: "Provoca",   es: "PROVOCA",   en: "PROVOKES"}
+  viento: {es: "VIENTO FUERZA {f} DEL {dir}", en: "WINDS FORCE {f} FROM {dir}"}
+  rafagas: {es: "CON RAFAGAS", en: "WITH GUST"}
+  en_zonas: {es: "EN {z}", en: "IN {z}"}
+  entre: {es: "ENTRE {c}", en: "BETWEEN {c}"}
+  union_zonas_coords: {es: " Y ", en: " AND "}
+  desde: {es: "A PARTIR DEL {h}", en: "FROM {h}"}
+  hasta: {es: "HASTA EL {h}", en: "UNTIL {h}"}                 # REVISAR
+  linea: {es: "AVISO {n}: {texto}", en: "WARNING {n}: {texto}"}
+  # Estado del aviso. REVISAR: no hay ejemplos emitidos de actualización,
+  # cese ni fuera de área; estos textos son una propuesta.
+  # "mostrar: false" = no se incluye en el boletín.
+  estados:
+    nuevo:        {ui: "Nuevo / vigente", linea: {es: "AVISO {n}: {texto}", en: "WARNING {n}: {texto}"}}
+    actualiza:    {ui: "Actualiza", linea: {es: "AVISO {n} ACTUALIZADO: {texto}", en: "WARNING {n} UPDATED: {texto}"}}
+    cese:         {ui: "Cese", linea: {es: "AVISO {n}: CESE", en: "WARNING {n}: CANCELLED"}}
+    fuera_area:   {ui: "Fuera del área", linea: {es: "AVISO {n}: FUERA DEL AREA", en: "WARNING {n}: OUT OF AREA"}}
+
+# ---------------------------------------------------------------------
+# AVISOS DE OLAS
+# Se toman del archivo de olas (BOL_METAREA_VI_ING) solo las líneas
+# «WARNING:» y se ubican debajo de los avisos de temporal.
+# REVISAR: no hay boletines emitidos con avisos de olas; el título, la
+# forma de la línea y la traducción al castellano son una propuesta.
+# ---------------------------------------------------------------------
+olas:
+  titulo: {es: "AVISO DE OLAS:", en: "WAVE WARNING:"}
+  linea: {es: "{area} {desde}-{hasta} UTC: {texto}", en: "{area} {desde}-{hasta} UTC: {texto}"}
+  # Áreas del archivo de olas que corresponden a áreas del boletín (id de zona).
+  # Las demás (A…G, ZONA 1…5, MAR DE WEDDELL…) salen con el nombre del archivo.
+  areas:
+    "AREA NORTE": norte
+    "AREA CENTRO ESTE": cestre
+    "AREA CENTRO OESTE": coeste
+    "AREA SUR ESTE": sudeste
+    "AREA SUR OESTE": sudoeste
+    "AREA DRAKE": drake
+  lugar:
+    "AT":            {es: "EN EL {d}", en: "AT {d}"}
+    "IN THE CENTER": {es: "EN EL CENTRO", en: "IN THE CENTER"}
+    "IN THE REST":   {es: "EN EL RESTO", en: "IN THE REST"}
+  altura: {es: "{h1}/{h2}M", en: "{h1}/{h2}M"}
+  evolucion:   # texto del archivo → castellano / inglés ({h} = una altura, ej. 5.5)
+    "DECAYING":                           {es: "DECRECIENDO", en: "DECAYING"}
+    "LITTLE CHANGE":                      {es: "CON POCO CAMBIO", en: "LITTLE CHANGE"}
+    "SLIGHTLY INCREASING":                {es: "AUMENTANDO LEVEMENTE", en: "SLIGHTLY INCREASING"}
+    "TEMPORARY {h}M":                     {es: "TEMPORARIAMENTE {h}M", en: "TEMPORARY {h}M"}
+    "BUILDING TO {h}M BY END OF PERIOD":  {es: "AUMENTANDO A {h}M HACIA EL FINAL DEL PERIODO", en: "BUILDING TO {h}M BY END OF PERIOD"}
+  movimiento: {es: "DESPLAZANDOSE AL {d}", en: "MOVING {d}"}
+  sin_avisos: {es: "", en: ""}   # texto si el archivo no trae avisos (vacío = no se agrega nada)
+
+# ---------------------------------------------------------------------
+# SINOPSIS
+# ---------------------------------------------------------------------
+sinopsis:
+  tipos:
+    DEPRESION:    {ui: "Depresión", es: "DEPRESION {p}HPA {pos}", en: "LOW {p}HPA {pos}", presion: true}
+    ANTICICLON:   {ui: "Anticiclón", es: "ANTICICLON {p}HPA {pos}", en: "HIGH {p}HPA {pos}", presion: true}
+    CFNT:         {ui: "Frente frío", es: "CFNT LINEA {pos}", en: "CFNT AT {pos}"}
+    WFNT:         {ui: "Frente cálido", es: "WFNT LINEA {pos}", en: "WFNT AT {pos}"}
+    OFNT:         {ui: "Frente ocluido", es: "OFNT LINEA {pos}", en: "OFNT AT {pos}"}
+    ESTACIONARIO: {ui: "Frente estacionario", es: "FRENTE ESTACIONARIO {pos}", en: "STATIONARY FRONT {pos}"}
+    VAGUADA:      {ui: "Vaguada", es: "VAGUADA LINEA {pos}", en: "TROUGH AT {pos}"}
+    CICLOGENESIS: {ui: "Ciclogénesis", es: "CICLOGENESIS {pos}", en: "CYCLOGENESIS {pos}", posicion_opcional: true}  # REVISAR
+    GRADIENTE:    {ui: "Fuerte gradiente bárico", es: "FUERTE GRADIENTE BARICO {pos}", en: "STRONG BARIC GRADIENT {pos}", prefijo_pos: {es: "ENTRE", en: "BETWEEN"}, posicion_libre: true}  # REVISAR
+  movimientos: ["", "MOV N", "MOV NE", "MOV E", "MOV SE", "MOV S", "MOV SW", "MOV W", "MOV NW", "STNR", "QSTNR"]
+  evoluciones: ["DPN", "WKN", "INTSF", "FLN", "BLDN", "NC"]
+  esperado: {es: "EXP {pos} EL {h}", en: "EXP {pos} BY {h}"}
+  extiende: {es: "EXTIENDE {f} EN {pos}", en: "EXTENDS {f} AT {pos}"}
+  frentes_extiende:
+    CFNT: {es: "CFNT", en: "CFNT"}
+    WFNT: {es: "WFNT", en: "WFNT"}
+    OFNT: {es: "OFNT", en: "OFNT"}
+    CUNA: {es: "EJE DE CUÑA", en: "RIDGE AXIS"}     # REVISAR
+
+# ---------------------------------------------------------------------
+# BOLETÍN PARA ESTACIONES NAVTEX (WWST03, en inglés)
+# Lleva los avisos y sistemas marcados «NAVTEX» y el pronóstico de las
+# costas agrupado por estación. Formato tomado del WWST03 del 25/11/2026.
+# ---------------------------------------------------------------------
+navtex:
+  id: "WWST03 SABM"
+  titulo: "WEATHER BULLETIN FOR NAVTEX STATIONS - METAREA 6 -"
+  fecha: "{mes} {dia}, {hora}UTC"
+  lineas_fijas: ["NATIONAL WEATHER SERVICE", "SEA ICE AND ICEBERGS ISSUED BY SHN", "PRESSURE HPA", "BEAUFORT SCALE WINDS."]
+  avisos_titulo: "GALE WARNING:"
+  sin_avisos: "NO WARNINGS"                    # REVISAR
+  sinopsis_titulo: "GENERAL SYNOPSIS:"         # el sistema anterior decía «SINOPSIS»
+  pronostico: "FORECAST ISSUED {ini} UTC VALID UNTIL {fin} UTC {fecha_fin}"
+  estaciones_titulo: "NAVTEX STATIONS FCST:"
+  # Zonas costeras que cubre cada estación. REVISAR: deducido del WWST03,
+  # que en algunas estaciones repite dos pronósticos.
+  estaciones:
+    - {nombre: "BUENOS AIRES", zonas: [rdp_int, rdp_ext]}
+    - {nombre: "MAR DEL PLATA", zonas: [uruguay, mdp]}
+    - {nombre: "BAHIA BLANCA", zonas: [bblanca]}
+    - {nombre: "COMODORO RIVADAVIA", zonas: [valdes, sanjorge]}
+    - {nombre: "RIO GALLEGOS", zonas: [patsur]}
+    - {nombre: "USHUAIA", zonas: [findm, malvinas]}
+  separador_zonas: "    "        # entre los pronósticos de dos zonas de una misma estación
+  repetir_iguales: false         # si dos zonas tienen el mismo texto, se pone una vez
+  ancho: 80                      # largo máximo de línea
+  interlineado_doble: true       # renglón en blanco después de cada línea
+  renglones_extra: {despues_encabezado: 1, despues_avisos: 3, antes_pie: 1}
+
+# ---------------------------------------------------------------------
+# HIELOS: reemplazos (expresiones regulares) para pasar al inglés el
+# bloque que se pega tal cual llega.
+# ---------------------------------------------------------------------
+hielos:
+  # Archivo del Servicio de Hidrografía Naval (NAVAREA VI): trae el informe en
+  # inglés y en castellano. Se usa cada bloque en su idioma, sin el título
+  # (se conserva la hora) y sin el pedido final de informar témpanos.
+  titulos:
+    es: "INFORME DE HIELOS MARINOS Y TEMPANOS"
+    en: "SEA ICE AND ICEBERGS REPORT"
+  quitar_desde: ["INFORMAR POSICION", "REPORT POSITION"]
+  # Si se pega solo el bloque en castellano, el inglés se arma con estos reemplazos.
+  reemplazos:
+    - ["LIMITE DE HIELO MARINO", "SEA ICE LIMIT"]
+    - ["TEMPANOS MAYORES A 10\\s?MN", "ICEBERGS GREATER THAN 10NM"]
+    - ["TEMPANOS MENOR(ES)? A 10\\s?MN", "ICEBERGS SMALLER THAN 10NM"]
+    - ["AREA DE TEMPANOS", "ICEBERGS AREA"]
+    - ["\\bTEMPANO(\\d+)", "ICEBERG\\1"]
+    - ["(\\d)MN\\b", "\\1NM"]
+    - ["\\bMN\\b", "NM"]
+  # Si después de traducir queda alguna de estas palabras, se avisa.
+  palabras_sospechosas: ["TEMPANO", "HIELO", "LIMITE", "MAYOR", "MENOR", "AREA DE"]
+
+# ---------------------------------------------------------------------
+# Abreviaturas OMM (Manual 558, Apéndice I.4). Se usan como glosario
+# para la IA al traducir textos libres.
+# ---------------------------------------------------------------------
+abreviaturas_omm:
+  "24 horas": 24-HR
+  "cambio de dirección antihorario": BACK
+  "cambio de dirección horario": VEER
+  "evolucionando": BECMG
+  "formándose": BLDN
+  "costero": CSTL
+  "frente frío": CFNT
+  "frente cálido": WFNT
+  "frente ocluido": OFNT
+  "disminuyendo": DECR
+  "aumentando": INCR
+  "profundizando": DPN
+  "debilitándose": WKN
+  "intensificándose": INTSF
+  "colmándose": FLN
+  "previsto": EXP
+  "niebla": FG
+  "siguiente / próximo": NXT
+  "pronóstico": FCST
+  "frecuente": FRQ
+  "granizo": HL
+  "fuerte (intensidad)": HVY
+  "mejorando": IMPR
+  "aislado": ISOL
+  "localmente": LOC
+  "moderado": MOD
+  "desplazándose": MOV
+  "millas náuticas": NM
+  "cerca": NR
+  "sin cambios": NC
+  "ocasionalmente": OCNL
+  "casi estacionario": QSTNR
+  "estacionario": STNR
+  "disperso": SCT
+  "severo": SEV
+  "chaparrones": SH
+  "leve": SLGT
+  "lentamente": SLWY
+  "rápidamente": QCKY
+  "temporalmente": TEMPO
+  "tormenta eléctrica": TSTM
+  "variable": VRB
+  "visibilidad": VIS
+  "aviso": WARN

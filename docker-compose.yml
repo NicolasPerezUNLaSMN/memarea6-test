@@ -1,0 +1,15 @@
+services:
+  memareavi:
+    build: .
+    image: smn/memareavi:latest
+    container_name: memareavi
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    env_file: .env
+    volumes:
+      # Historial de boletines (json + txt). Hacer backup de esta carpeta.
+      - ./data:/data
+      # Catálogo de términos: se puede editar sin reconstruir la imagen
+      # (reiniciar el contenedor después de editar).
+      - ./app/config/catalogo.yaml:/app/config/catalogo.yaml:ro
