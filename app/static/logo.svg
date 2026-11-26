@@ -1,6 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="meMareaVI">
   <defs>
     <clipPath id="c"><rect x="0" y="0" width="64" height="64" rx="16"/></clipPath>
+    <!-- movimiento suave de agua: las olas se desplazan y el velero se mece -->
+    <style>
+      .mm-ola1{animation:mm-ola 6s linear infinite}
+      .mm-ola2{animation:mm-ola 9s linear infinite reverse}
+      .mm-velero{animation:mm-mecer 3s ease-in-out infinite;transform-box:view-box;transform-origin:38px 46px}
+      @keyframes mm-ola{from{transform:translateX(0)}to{transform:translateX(-32px)}}
+      @keyframes mm-mecer{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(1.2px) rotate(2deg)}}
+      @media (prefers-reduced-motion:reduce){.mm-ola1,.mm-ola2,.mm-velero{animation:none}}
+    </style>
   </defs>
   <g clip-path="url(#c)">
     <!-- cielo -->
@@ -9,16 +18,23 @@
     <path d="M7 15 H30 a5 5 0 1 0 -5 -5" fill="none" stroke="#BFE6EE" stroke-width="2.6" stroke-linecap="round"/>
     <path d="M11 22 H23" fill="none" stroke="#BFE6EE" stroke-width="2.6" stroke-linecap="round" opacity=".75"/>
     <!-- velero, un poco escorado por el viento -->
-    <g transform="rotate(8 36 40)">
-      <path d="M37 13 V40" stroke="#F4D35E" stroke-width="2" stroke-linecap="round"/>
-      <path d="M38.5 15 L52 38 H38.5 Z" fill="#FFFFFF"/>
-      <path d="M35.5 19 L25 38 H35.5 Z" fill="#E8F4F7"/>
-      <path d="M22 41 H54 L49 48 H27 Z" fill="#F26B4F"/>
+    <g class="mm-velero">
+      <g transform="rotate(8 36 40)">
+        <path d="M37 13 V40" stroke="#F4D35E" stroke-width="2" stroke-linecap="round"/>
+        <path d="M38.5 15 L52 38 H38.5 Z" fill="#FFFFFF"/>
+        <path d="M35.5 19 L25 38 H35.5 Z" fill="#E8F4F7"/>
+        <path d="M22 41 H54 L49 48 H27 Z" fill="#F26B4F"/>
+      </g>
     </g>
-    <!-- olas -->
-    <path d="M0 50 q8 -6 16 0 t16 0 t16 0 t16 0 V64 H0 Z" fill="#2BA3B8"/>
-    <path d="M0 56 q8 -5 16 0 t16 0 t16 0 t16 0 V64 H0 Z" fill="#1B7F98"/>
-    <path d="M4 50 q4 -3 8 0" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
-    <path d="M36 50 q4 -3 8 0" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+    <!-- olas (más anchas que el logo para que el desplazamiento no tenga cortes) -->
+    <g class="mm-ola1">
+      <path d="M0 50 q8 -6 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 V64 H0 Z" fill="#2BA3B8"/>
+      <path d="M4 50 q4 -3 8 0" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+      <path d="M36 50 q4 -3 8 0" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+      <path d="M68 50 q4 -3 8 0" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+    </g>
+    <g class="mm-ola2">
+      <path d="M0 56 q8 -5 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 V64 H0 Z" fill="#1B7F98"/>
+    </g>
   </g>
 </svg>
