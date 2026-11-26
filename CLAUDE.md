@@ -45,6 +45,22 @@ Texto claro → interpretación (reglas, sin IA) → datos del boletín → cont
 - Los datos viven en `DATA_DIR` (en Docker, `/data`): historial, `registro_avisos.json`, `estadisticas/*.csv`. No hay base de datos y corre una sola instancia.
 - `tests/borradores/` tiene borradores reales con nombres de pronosticadores: el repo tiene que ser privado.
 
+## Decisiones ya tomadas (no volver a discutirlas sin pedido explícito)
+
+- **Sin IA por defecto.** El texto claro se interpreta con reglas (`INTERPRETE=reglas`). El modo IA existe pero está apagado.
+- **Entrada libre.** El pronosticador escribe como siempre (Word, PDF, .txt o en pantalla); el formulario quedó solo como «Ajuste fino».
+- **Numeración**: temporal correlativo anual como el sistema viejo; olas con serie propia («AVISO DE OLAS N»), numeradas solas por área; las dos series vuelven a 1 el 1 de enero. Un aviso nuevo sin número toma el siguiente; «actualizar N» conserva el número.
+- **Olas**: solo las líneas WARNING. Áreas A–G del archivo = Mar del Plata, Bahía Blanca, Península Valdés, Golfo San Jorge, Patagonia Sur, Fin del Mundo, Malvinas (mapa de referencia del SMN). Zona 1–5, Weddell y Bellingshausen son subáreas antárticas fuera del boletín (destildadas por defecto).
+- **Inglés**: estilo de boletín marino, no literal (GUSTS FORCE 8, STRONG PRESSURE GRADIENT WILL CAUSE, TEMPORARY IMPROVEMENTS, SLEET, TSTM, FROM AFTERNOON, «RAIN AND TSTM»).
+- **Formato**: replica los boletines emitidos (renglones en blanco, encabezado partido). Errores del sistema viejo corregidos a propósito (fechas truncadas, «SOBRE» colgado, NIGTH, LUEGOPROB…).
+- **Estadísticas**: CSV por año en `DATA_DIR/estadisticas/`, sin base de datos.
+- **Producción**: contenedor Docker en el SMN, una sola instancia, `data/` montada y con backup. Streamlit Cloud (repo personal `memarea6-test`) es solo para pruebas: su `data/` se borra en cada reinicio.
+
+## Documentación
+
+- `README.md`: uso, instalación y funcionamiento.
+- Documento funcional con diagramas: «meMareaVI — Documentación del sistema» (Claude Doc).
+
 ## Pendiente
 
 - Envío por FTP a la web del SMN, INTRAMET y el envío internacional (enganche: `generar_salida()` en `app.py`; propuesta: `core/envio.py` + botón «Enviar»).
