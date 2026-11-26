@@ -76,7 +76,7 @@ def _fenomenos(f, donde, err):
     if not items:
         err.append(f"{donde}: cargá al menos un fenómeno o marcá «sin fenómenos significativos».")
     for i, it in enumerate(items, 1):
-        if not it.get("fen"):
+        if not it.get("fen") and not it.get("evol"):
             err.append(f"{donde} › fenómeno {i}: elegí al menos un fenómeno.")
 
 
@@ -184,10 +184,10 @@ def validar(cat: dict, b: dict) -> tuple[list[str], list[str]]:
             adv.append("Olas: no se encontró la línea «PRONOSTICO VALIDO DESDE…» en el archivo.")
         for linea_rara in datos["no_reconocidos"]:
             adv.append(f"Olas: no se reconoció el aviso «{linea_rara}»; no se incluyó.")
-        for a in olas.seleccionados(b):
+        for a in olas.seleccionados(b, cat):
             if olas.linea(cat, zonas_cat, a, "es") is None:
                 adv.append(f"Olas: «{a['evol']}» no tiene traducción en el catálogo (aviso de {a['area']}).")
-        otras = sorted({a["area"] for a in olas.seleccionados(b) if a["area"] not in cat["olas"]["areas"]})
+        otras = sorted({a["area"] for a in olas.seleccionados(b, cat) if olas.area_info(cat, a["area"]) is None})
         if otras:
             adv.append("Olas: hay avisos en áreas que no son del boletín (" + ", ".join(otras) + "). "
                        "Destildalas si no corresponden.")
@@ -241,6 +241,15 @@ def validar(cat: dict, b: dict) -> tuple[list[str], list[str]]:
     pendientes = [t for t in render.textos_libres(b) if t not in b.get("traducciones", {})]
     if pendientes:
         adv.append(f"Hay {len(pendientes)} texto(s) libre(s) sin traducir: en el inglés saldrán como [TRADUCIR: …].")
+
+    # ---------- numeración (registro de avisos)
+    ri = b.get("registro_info") or {}
+    for n in ri.get("vigentes_sin_mencionar", []):
+        adv.append(f"Aviso {n}: estaba vigente y no aparece en el borrador. ¿Cesó? Se puede agregar el cese con un botón.")
+    for n in ri.get("no_vigentes", []):
+        adv.append(f"Aviso {n}: se actualiza o cesa, pero no figura como vigente en el registro de avisos.")
+    for n in ri.get("ya_usados", []):
+        adv.append(f"Aviso {n}: figura como nuevo, pero ese número ya se usó este año.")
 
     # ---------- NAVTEX
     if not any(a.get("navtex") for a in b["avisos"]) and not any(s.get("navtex") for s in b["sinopsis"]):

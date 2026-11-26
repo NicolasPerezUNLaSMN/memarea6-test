@@ -4,6 +4,7 @@ datos estructurados que cargaría el pronosticador.
 Las únicas diferencias admitidas son correcciones de errores del sistema
 anterior, listadas en CORRECCIONES con su motivo.
 """
+import re
 from pathlib import Path
 
 from core import catalogo, modelo, render, validar
@@ -23,12 +24,27 @@ HIELO_22 = ("221400 UTC 1.LIMITE DE HIELO MARINO 5429S 02000W 5346S 02618W 5648S
             "5500S 05000W 6000S 06716W 6630S 06716W")
 
 
+# El inglés de los boletines emitidos era muy literal; ahora se usan formas de
+# boletín marino. Estos son los únicos cambios respecto de lo emitido.
+INGLES_NUEVO = [
+    (r"GUST WITH (\d+) INTENSITY", r"GUSTS FORCE \1"), (r"WITH GUST\b", "WITH GUSTS"),
+    ("STRONG BARIC GRADIENT", "STRONG PRESSURE GRADIENT"), ("WILL PROVOKE", "WILL CAUSE"), ("PROVOKES", "CAUSES"),
+    ("SPELLS OF GOOD WEATHER", "TEMPORARY IMPROVEMENTS"), ("STARTING EARLY MORNING", "FROM EARLY MORNING"),
+    ("STARTING EVENING", "FROM AFTERNOON"), ("STARTING NIGHT", "FROM NIGHT"), ("RAIN AND SNOW MIXTURE", "SLEET"),
+    ("SNOW FALL", "SNOW"), (r"\bSTORMS\b", "TSTM"), ("DURING THE EVENING", "DURING THE AFTERNOON"),
+    ("TOWARDS THE END OF THE PERIOD", "LATER IN PERIOD"),
+    (r"\b(RAIN|SH|FOG) (TSTM|RAIN|SNOW|MIST)\b", r"\1 AND \2"),
+]
+
+
 def leer(nombre, correcciones):
     txt = (EJ / nombre).read_text(encoding="utf-8")
     for viejo, nuevo in correcciones:
         assert viejo in txt, viejo
         txt = txt.replace(viejo, nuevo)
     es, en = txt.split("%\n\n")
+    for viejo, nuevo in INGLES_NUEVO:
+        en = re.sub(viejo, nuevo, en)
     # El sistema anterior dejaba un renglón en blanco antes del pie en
     # castellano pero no en inglés; ahora se deja en los dos.
     if "\n\n-----" not in en:

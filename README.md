@@ -84,6 +84,49 @@ líneas de hasta 80 caracteres). Lleva:
 No siempre se ponen posiciones iniciales ni finales: la app no lo exige. Solo
 advierte (sin bloquear) si una posición escrita tiene un formato raro.
 
+## Numeración de avisos
+
+La app numera sola, sin depender del sistema anterior:
+
+- **Temporal**: correlativo anual. Un aviso nuevo (sin número en el borrador)
+  toma el siguiente; uno que se actualiza conserva el suyo.
+- **Olas**: serie propia («AVISO DE OLAS 12»). Se numeran solos por área: si
+  el área ya tenía aviso vigente conserva el número (ACTUALIZADO), si es nueva
+  toma el siguiente, y si deja de tener aviso sale el CESE.
+- Las dos series vuelven a 1 el 1 de enero.
+- Si un aviso vigente no aparece en el borrador, la app pregunta si cesó y
+  ofrece agregar el cese con un botón.
+
+El registro está en `data/registro_avisos.json` (con lo emitido en cada
+corrida; volver a generar la misma corrida no gasta números). Solo se guardan
+boletines sin errores. La primera vez se carga, en la barra lateral →
+«Numeración de avisos», el último número usado y los avisos vigentes.
+
+## Datos para estadísticas y verificación
+
+Cada boletín generado sin errores agrega filas a dos CSV por año en
+`data/estadisticas/` (se descargan desde la barra lateral → «Datos para
+estadísticas»):
+
+- `avisos_AAAA.csv`: una fila por aviso de temporal y de olas en cada corrida
+  (número, estado, causa, fuerza Beaufort, dirección, zonas, coordenadas,
+  vigencia, NAVTEX, alturas de ola, autor y el texto emitido).
+- `pronosticos_AAAA.csv`: una fila por zona o parte de zona en cada corrida
+  (dirección inicial y final, fuerza mínima y máxima en Beaufort, máxima del
+  período, ráfagas, cambios, fenómenos, probabilidad, visibilidad, si estaba
+  en aviso, autor y el texto emitido).
+
+Separador «;» y UTF-8 con BOM: se abren directo con Excel en castellano, y con
+pandas o R. Sin base de datos; volver a generar una corrida reemplaza sus filas.
+
+## Mapa de avisos
+
+La pestaña «Mapa» del resultado dibuja el METAREA VI con las zonas en aviso de
+temporal (relleno), de olas (rayado) y los avisos por coordenadas (recuadro
+punteado), con el nombre de cada costa. Se descarga como .svg. Las áreas oceánicas son exactas; las costeras
+usan sus límites norte-sur y un borde este aproximado del mapa de referencia del
+SMN (`catalogo.yaml` → `mapa`). La costa es de Natural Earth (dominio público).
+
 ## Hielos
 
 Se adjunta el archivo del Servicio de Hidrografía Naval (por ejemplo
@@ -102,10 +145,11 @@ y las ubica debajo de los avisos de temporal, en castellano y en inglés:
     AVISO DE OLAS:
     AREA PASAJE DE DRAKE (55S- 60S Y 60W- 67W) 15/0900-15/2100 UTC: EN EL S 5.0/6.0M DECRECIENDO, DESPLAZANDOSE AL NE
 
-Las áreas del archivo que coinciden con las del boletín (Norte, Centro Este,
-Centro Oeste, Sur Este, Sur Oeste, Drake) salen con su nombre oficial; las
-demás (A…G, ZONA 1…5, Mar de Weddell) con el nombre del archivo, y la app lo
-advierte. Avisa también si la fecha del archivo no corresponde al boletín.
+Las áreas del archivo se pasan a las zonas del boletín según el mapa de
+referencia del SMN: Río de la Plata, A Mar del Plata, B Bahía Blanca,
+C Península Valdés, D Golfo San Jorge, E Patagonia Sur, F Fin del Mundo,
+G Malvinas, y las áreas oceánicas. Las subáreas antárticas (Zona 1 a 5, mares
+de Weddell y Bellingshausen) no son del boletín: aparecen destildadas. Avisa también si la fecha del archivo no corresponde al boletín.
 Título, forma de la línea y traducciones están en `olas` del catálogo (REVISAR:
 no había boletines emitidos con avisos de olas para tomar como modelo).
 
@@ -194,10 +238,9 @@ Correcciones de errores del sistema anterior:
 
 Decisiones a confirmar con el área de pronóstico (marcadas `REVISAR` en el catálogo):
 
-- «A PARTIR DE LA MAÑANA» se traduce `STARTING MORNING` (antes `EARLY MORNING`, igual que «madrugada»).
-- «TARDE» se sigue traduciendo `EVENING`; la OMM usa *afternoon* para tarde.
-- «TORMENTAS» se sigue traduciendo `STORMS`; la abreviatura OMM es `TSTM`.
-- «RAFAGAS CON INTENSIDAD 8» se sigue traduciendo `GUST WITH 8 INTENSITY`.
+- «A PARTIR DE LA MAÑANA» se traduce `FROM MORNING` (antes `EARLY MORNING`, igual que «madrugada»).
+- El inglés se hizo menos literal: GUSTS FORCE 8, STRONG PRESSURE GRADIENT WILL CAUSE, TEMPORARY
+  IMPROVEMENTS, SLEET, TSTM, FROM AFTERNOON, «RAIN AND TSTM». Conviene que lo revise alguien del área.
 - La tabla de palabras de viento → Beaufort (ver arriba).
 - Textos de avisos actualizados, cesados y fuera del área, y «HASTA EL».
 - Fenómenos nuevos vistos en los borradores: chaparrones de nieve y de

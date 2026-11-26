@@ -47,7 +47,7 @@ def test_cabral_telegrafico_cuadrantes_y_seccion_navtex():
              "AREA NORTE (35S- 40S Y 20W- 55W) W DE 30W - E DE 40W:")
     assert [(s["presion"], s["navtex"]) for s in b["sinopsis"]] == [("1039", False), ("990", True), ("1035", True)]
     motivos = " ".join(d["motivo"] for d in dudas)
-    assert "no tiene número" in motivos and "horario o antihorario" in motivos
+    assert "horario o antihorario" in motivos
 
 
 def test_guetti_cpf_spf_y_cambios_encadenados():
@@ -64,7 +64,8 @@ def test_guetti_cpf_spf_y_cambios_encadenados():
 def test_un_renglon_por_elemento_2022():
     b, dudas, es = boletin("navegantes_27-08-2022_12z.docx", "2022-08-27")
     contiene(es,
-             "AVISO 389: DEPRESION 973HPA 56S 55W MOV NE PROVOCA VIENTO FUERZA 8 DEL SW CON RAFAGAS EN AREA PASAJE DE DRAKE",
+             "AVISO 389: DEPRESION 973HPA 56S 55W MOV NE PROVOCA VIENTO FUERZA 8 DEL SW CON RAFAGAS EN COSTA FIN DEL MUNDO "
+             "COSTA DE ISLAS MALVINAS AREA PASAJE DE DRAKE",
              "DEPRESION 1005HPA 37S 53W MOV SE DPN EXP 49S 25W EL 28/1200 EXTIENDE CFNT EN 37S 53W 34S 58W MOV SE "
              "EXP 49S 25W 37S 35W 30S 45W EL 28/1200",
              "COSTA FIN DEL MUNDO(54ºS - 55ºS): SECTOR S 7/8 CON RAFAGAS VEER SECTOR W 6/7 CON RAFAGAS EL 28/0300",
@@ -95,8 +96,20 @@ def test_navtex_formato():
                           "NOVEMBER 8, 12:00UTC"]
     assert all(len(l) <= 80 for l in lineas)
     assert all(l == "" for l in lineas[1::2])                       # interlineado doble
-    assert "GALE WARNING:\n\nWARNING 466 UPDATED: STRONG BARIC GRADIENT" in nav
-    assert "GENERAL SYNOPSIS:\n\nSTRONG BARIC GRADIENT BETWEEN 50S-60S 40W-68W MOV E\n\nHIGH 1029HPA" in nav
+    assert "GALE WARNING:\n\nWARNING 466 UPDATED: STRONG PRESSURE GRADIENT" in nav
+    assert "GENERAL SYNOPSIS:\n\nSTRONG PRESSURE GRADIENT BETWEEN 50S-60S 40W-68W MOV E\n\nHIGH 1029HPA" in nav
     assert "LOW 1002HPA" not in nav                                   # no marcada para NAVTEX
-    assert "USHUAIA:    SECTOR W 8 GUST WITH 9 INTENSITY" in nav
+    assert "USHUAIA:    SECTOR W 8 GUSTS FORCE 9" in nav
     assert lineas[-3:] == ["-----------------------------------------------------------------", "", "NNNN="]
+
+
+def test_mapa_marca_zonas_en_aviso():
+    from core import mapa
+    b, _, _ = boletin("navegantes_27-08-2022_12z.docx", "2022-08-27")
+    b["olas"] = (DIR / "olas_4.txt").read_text(encoding="utf-8")
+    viento, oleaje, rects = mapa.zonas_en_aviso(CAT, b)
+    assert set(viento) == {"uruguay", "mdp", "bblanca", "valdes", "sanjorge", "patsur", "findm", "malvinas", "drake"}
+    assert set(oleaje) == {"drake", "coeste"}                       # ZONA 2/3 y Weddell quedan fuera
+    assert len(rects) == 2                                           # avisos 392 y 391, por coordenadas
+    dibujo = mapa.svg(CAT, b)
+    assert dibujo.startswith("<svg") and "Aviso 392" in dibujo and "Aviso de olas" in dibujo

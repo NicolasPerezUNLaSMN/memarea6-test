@@ -107,7 +107,8 @@ def _esquema(cat: dict) -> dict:
                 "cambios": A(cambio)})
     item = O({"conector": E(fen["conector"]), "prob": E(fen["probabilidad"]), "fen": A(E(fen["lista"])),
               "cal": E(fen["calificativo"]), "momento": E(fen["momento"]), "evol": E(fen["evolucion"]),
-              "momento_evol": E(fen["momento"])})
+              "momento_evol": E(fen["momento"]), "hora_evol": S(description="DD/HHMM de la evolución o vacío"),
+              "hora_evol_tipo": E(["el", "desde"])})
     vis_vals = [""] + list(cat["visibilidad"]["valores"])
     division = O({"tipo": E(["entera", "condiciones", "coordenadas", "cuadrante", "resto"]),
                   "conds": A(O({"rel": E(["N", "S", "E", "W"]), "valor": S(description="ej. 45S o 40W")})),
@@ -288,7 +289,8 @@ def _subzona(cat, d) -> dict:
     }
     f = d.get("fenomenos") or {}
     items = [{**modelo.nuevo_item_fenomeno(),
-              **{k: it.get(k, "") for k in ("conector", "prob", "cal", "momento", "evol", "momento_evol")},
+              **{k: it.get(k, "") for k in ("conector", "prob", "cal", "momento", "evol", "momento_evol", "hora_evol")},
+              "hora_evol_tipo": it.get("hora_evol_tipo") or "el",
               "fen": list(it.get("fen", []))} for it in f.get("items", [])]
     sz["fenomenos"] = {"sin_fenomenos": bool(f.get("sin_fenomenos")), "items": items}
     vis = d.get("vis") or {}
@@ -304,7 +306,7 @@ def a_boletin(cat: dict, datos: dict, base: dict) -> tuple[dict, list[dict]]:
     Devuelve (boletín, dudas).
     """
     b = modelo.nuevo_boletin(cat)
-    for k in ("fecha", "corrida", "hielos", "olas", "olas_excluir", "texto_claro"):
+    for k in ("fecha", "corrida", "hielos", "olas", "olas_excluir", "olas_incluir", "texto_claro"):
         if k in base:
             b[k] = base[k]
     dudas = list(datos.get("dudas", []))

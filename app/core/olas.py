@@ -60,11 +60,26 @@ def _evolucion(cat, evol, lang):
     return None
 
 
-def linea(cat, zonas: dict, a: dict, lang: str) -> str | None:
+def area_info(cat, area: str):
+    """(ids de zona, rótulo es, rótulo en) de un área del archivo, o None si no corresponde a ninguna."""
+    v = cat["olas"]["areas"].get(area)
+    if v is None:
+        return None
+    if isinstance(v, str):
+        z = next(z for g in ("costeras", "oceanicas") for z in cat["zonas"][g] if z["id"] == v)
+        return [v], z["es"], z["en"]
+    return list(v["zonas"]), v["es"], v["en"]
+
+
+def fuera_del_boletin(cat, area: str) -> bool:
+    return any(area.startswith(p) for p in cat["olas"].get("fuera_del_boletin", []))
+
+
+def linea(cat, zonas: dict, a: dict, lang: str, n="", estado="nuevo") -> str | None:
     """Línea del aviso en el idioma pedido; None si algo no tiene traducción."""
     oc = cat["olas"]
-    zid = oc["areas"].get(a["area"])
-    area = zonas[zid][lang] if zid in zonas else a["area"]
+    info = area_info(cat, a["area"])
+    area = (info[1] if lang == "es" else info[2]) if info else a["area"]
     lugar_k, rumbo = a["lugar"]
     lugar = oc["lugar"][lugar_k][lang].format(d=rumbo) if lugar_k else ""
     evol = _evolucion(cat, a["evol"], lang) if a["evol"] else ""
@@ -72,10 +87,21 @@ def linea(cat, zonas: dict, a: dict, lang: str) -> str | None:
         return None
     texto = " ".join(p for p in [lugar, oc["altura"][lang].format(h1=a["h1"], h2=a["h2"])] if p)
     texto += (f" {evol}" if evol else "") + ", " + oc["movimiento"][lang].format(d=a["mov"])
-    return oc["linea"][lang].format(area=area, desde=a["desde"], hasta=a["hasta"], texto=texto)
+    plantilla = oc["linea_actualiza"] if estado == "actualiza" else oc["linea"]
+    return plantilla[lang].format(n=n, area=area, desde=a["desde"], hasta=a["hasta"], texto=texto)
 
 
-def seleccionados(b: dict) -> list[dict]:
+def incluido(cat, b: dict, a: dict) -> bool:
+    """Tildado: sí por defecto, salvo las subáreas fuera del boletín (que hay que tildar a mano)."""
+    if a["clave"] in b.get("olas_excluir", []):
+        return False
+    if fuera_del_boletin(cat, a["area"]):
+        return a["clave"] in b.get("olas_incluir", [])
+    return True
+
+
+def seleccionados(b: dict, cat: dict | None = None) -> list[dict]:
+    from .catalogo import cargar
+    cat = cat or cargar()
     datos = leer(b.get("olas", "") or "")
-    excluir = set(b.get("olas_excluir", []))
-    return [a for a in datos["avisos"] if a["clave"] not in excluir]
+    return [a for a in datos["avisos"] if incluido(cat, b, a)]

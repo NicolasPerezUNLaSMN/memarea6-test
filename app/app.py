@@ -16,7 +16,7 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core import almacen, catalogo, ia, interpretar, modelo, render, validar  # noqa: E402
+from core import almacen, catalogo, estadisticas, ia, interpretar, modelo, registro, render, validar  # noqa: E402
 
 ESTATICO = Path(__file__).resolve().parent / "static"
 st.set_page_config(page_title="meMareaVI", page_icon=str(ESTATICO / "favicon.png"), layout="wide")
@@ -53,9 +53,13 @@ def foto(b) -> str:
 
 
 def generar_salida():
+    registro.numerar(CAT, ss.b)                     # números nuevos, olas y ceses sugeridos
     ss.salida = render.generar_todo(CAT, ss.b)
     ss.foto = foto(ss.b)
     ss.guardado = almacen.guardar(ss.b, ss.salida, ss.get("autor", ""))
+    if not validar.validar(CAT, ss.b)[0]:           # registro y estadísticas: solo boletines sin errores
+        registro.registrar(CAT, ss.b, autor=ss.get("autor", ""))
+        estadisticas.exportar(CAT, ss.b, autor=ss.get("autor", ""))
     ss.gen += 1
 
 
@@ -133,6 +137,34 @@ with st.sidebar:
     if st.button("Empezar en blanco", use_container_width=True):
         recargar(modelo.nuevo_boletin(CAT))
 
+    with st.expander("Numeración de avisos"):
+        res = registro.resumen()
+        st.caption(f"Último aviso de temporal: **{res['ultimo_viento']}** · último de olas: **{res['ultimo_olas']}**  \n"
+                   f"Vigentes de temporal: {', '.join(map(str, res['vigentes_viento'])) or 'ninguno'}  \n"
+                   f"Vigentes de olas: {', '.join(f'{n} ({a})' for n, a in res['vigentes_olas'].items()) or 'ninguno'}")
+        st.caption("Para empezar (una sola vez): el último número usado en el sistema anterior y los avisos vigentes.")
+        reg_actual = registro.cargar()
+        arr = reg_actual["arranque"]
+        c1, c2 = st.columns(2)
+        anio = c1.number_input("Año", value=int(arr.get("anio") or dt.date.today().year), step=1, key="arr_anio")
+        ult_v = c2.number_input("Último de temporal", value=int(arr.get("viento") or 0), step=1, min_value=0, key="arr_v")
+        ult_o = c1.number_input("Último de olas", value=int(arr.get("olas") or 0), step=1, min_value=0, key="arr_o")
+        vig_txt = c2.text_input("Vigentes de temporal", value=", ".join(map(str, arr.get("vigentes_viento", []))),
+                                key="arr_vig", placeholder="483, 484")
+        if st.button("Guardar punto de partida", use_container_width=True):
+            reg_actual["arranque"] = {"anio": int(anio), "viento": int(ult_v), "olas": int(ult_o),
+                                      "vigentes_viento": [int(x) for x in re.findall(r"\d+", vig_txt)]}
+            registro.guardar(reg_actual)
+            st.success("Guardado.")
+
+    with st.expander("Datos para estadísticas"):
+        st.caption("Avisos y pronósticos de cada boletín generado sin errores, en CSV (se abren con Excel).")
+        for ruta in estadisticas.archivos():
+            st.download_button(f"⬇ {ruta.name}", ruta.read_bytes(), file_name=ruta.name, mime="text/csv",
+                               use_container_width=True, key=f"csv_{ruta.name}")
+        if not estadisticas.archivos():
+            st.caption("Todavía no hay datos.")
+
     with st.expander("Importar / exportar datos"):
         st.download_button("Descargar datos (.json)", json.dumps(B, ensure_ascii=False, indent=1),
                            file_name=f"boletin_{B['fecha']}_{B['corrida']}Z.json", use_container_width=True)
@@ -191,7 +223,7 @@ with tab_bol:
         if arch_o is not None and arch_o.file_id != ss.get("olas_id"):
             ss.olas_id = arch_o.file_id
             B["olas"] = interpretar.leer_archivo(arch_o.getvalue(), arch_o.name)
-            B["olas_excluir"] = []
+            B["olas_excluir"], B["olas_incluir"] = [], []
             ss.ver += 1
             st.rerun()
         B["olas"] = st.text_area("Olas", value=B.get("olas", ""), key=K("olas"), height=90,
@@ -205,12 +237,20 @@ with tab_bol:
             else:
                 with st.expander(f"Avisos de olas encontrados ({len(datos_olas['avisos'])}) — destildá los que no van",
                                  expanded=True):
-                    excluir = set(B.get("olas_excluir", []))
+                    excluir, incluir = set(B.get("olas_excluir", [])), set(B.get("olas_incluir", []))
                     for a in datos_olas["avisos"]:
                         txt = olas_mod.linea(CAT, ZONAS, a, "es") or a["original"]
-                        marcado = st.checkbox(txt, value=a["clave"] not in excluir, key=K("ola", a["clave"]))
-                        (excluir.discard if marcado else excluir.add)(a["clave"])
-                    B["olas_excluir"] = sorted(excluir)
+                        fuera = olas_mod.fuera_del_boletin(CAT, a["area"])
+                        if fuera:
+                            txt += "  (subárea antártica, fuera del boletín)"
+                        marcado = st.checkbox(txt, value=olas_mod.incluido(CAT, B, a), key=K("ola", a["clave"]))
+                        excluir.discard(a["clave"])
+                        incluir.discard(a["clave"])
+                        if fuera and marcado:
+                            incluir.add(a["clave"])
+                        elif not fuera and not marcado:
+                            excluir.add(a["clave"])
+                    B["olas_excluir"], B["olas_incluir"] = sorted(excluir), sorted(incluir)
 
         if st.button("Interpretar y generar", type="primary", use_container_width=True,
                      disabled=not ss.texto.strip()):
@@ -221,7 +261,8 @@ with tab_bol:
                     st.error(f"No se pudo interpretar el texto: {e}")
                     st.stop()
             base = {"fecha": B["fecha"], "corrida": B["corrida"], "hielos": B["hielos"], "olas": B.get("olas", ""),
-                    "olas_excluir": B.get("olas_excluir", []), "texto_claro": ss.texto}
+                    "olas_excluir": B.get("olas_excluir", []), "olas_incluir": B.get("olas_incluir", []),
+                    "texto_claro": ss.texto}
             ss.b, ss.dudas = interpretar.a_boletin(CAT, datos, base)
             ss.ver += 1
             generar_salida()
@@ -235,6 +276,18 @@ with tab_bol:
             errores, advertencias = validar.validar(CAT, B)
             if foto(B) != ss.foto:
                 st.warning("Cambiaste datos en «Ajuste fino» después de generar. Tocá «Regenerar» allí.")
+            sin_mencionar = (B.get("registro_info") or {}).get("vigentes_sin_mencionar", [])
+            if sin_mencionar:
+                lista = ", ".join(map(str, sin_mencionar))
+                st.warning(f"**Avisos vigentes que no aparecen en el borrador:** {lista}. ¿Cesaron?")
+                if st.button(f"Agregar el cese de {lista} y regenerar"):
+                    for n in sin_mencionar:
+                        nuevo = modelo.nuevo_aviso()
+                        nuevo.update(numero=str(n), estado="cese", navtex=True)
+                        B["avisos"].append(nuevo)
+                    ss.ver += 1
+                    generar_salida()
+                    st.rerun()
             if ss.dudas:
                 st.warning("**Revisá estas interpretaciones:**\n\n" + "\n".join(
                     f"- **{d.get('donde', '')}**: {d.get('motivo', '')}" for d in ss.dudas))
@@ -246,7 +299,7 @@ with tab_bol:
                     st.markdown("\n".join(f"- {a}" for a in advertencias))
 
             nombres = render.nombre_archivos(B)
-            t_es, t_en, t_nav = st.tabs(["WWST01 · castellano", "WWST02 · inglés", "WWST03 · NAVTEX"])
+            t_es, t_en, t_nav, t_mapa = st.tabs(["WWST01 · castellano", "WWST02 · inglés", "WWST03 · NAVTEX", "Mapa"])
             es = t_es.text_area("castellano", ss.salida["es"], height=520, key=f"out_es_{ss.gen}",
                                 label_visibility="collapsed")
             en = t_en.text_area("inglés", ss.salida["en"], height=520, key=f"out_en_{ss.gen}",
@@ -266,6 +319,12 @@ with tab_bol:
                 texto_nav = render.generar_navtex(CAT, B)
                 nav = st.text_area("NAVTEX", texto_nav, height=430, key=f"out_nav_{hash(texto_nav)}",
                                    label_visibility="collapsed")
+            with t_mapa:
+                from core import mapa
+                dibujo = mapa.svg(CAT, B)
+                st.markdown(dibujo, unsafe_allow_html=True)
+                st.download_button("⬇ Mapa (.svg)", dibujo.encode("utf-8"), file_name=f"mapa_avisos_{nombres['es'][13:19]}.svg",
+                                   mime="image/svg+xml")
             st.caption("Se puede retocar el texto antes de descargar; un cambio en un idioma no pasa al otro.")
             sep = CAT["encabezado"]["separador_combinado"]
             c = st.columns(4)
@@ -290,7 +349,9 @@ def ui_avisos():
         with st.container(border=True):
             c = st.columns([0.8, 1.3, 2, 2.6, 1.2, 0.4])
             with c[0]:
-                t_in("N.º", a, "numero", K(aid, "n"))
+                t_in("N.º", a, "numero", K(aid, "n"), help="Se asigna solo si es nuevo y queda vacío")
+                if a.get("numero_auto"):
+                    st.caption("asignado")
             with c[1]:
                 sel("Estado", list(ac["estados"]), a, "estado", K(aid, "estado"), fmt=lambda k: ac["estados"][k]["ui"])
             if a.get("estado") in ("cese", "fuera_area"):
@@ -488,9 +549,9 @@ def ui_fenomenos(f, pref):
     for j, it in enumerate(f["items"]):
         iid = it["id"]
         if j == 0:
-            c = [None] + st.columns([1.5, 2.4, 1.2, 1.7, 1.5, 1.7, 0.4])
+            c = [None] + st.columns([1.4, 2.2, 1.1, 1.6, 1.4, 1.5, 1.0, 0.4])
         else:
-            c = st.columns([0.9, 1.1, 2.2, 1.1, 1.6, 1.4, 1.6, 0.4])
+            c = st.columns([0.9, 1.1, 2.0, 1.0, 1.5, 1.3, 1.4, 1.0, 0.4])
             with c[0]:
                 sel("Conector", list(FEN["conector"]), it, "conector", K(pref, iid, "con"),
                     fmt=fmt_dic(FEN["conector"], "(nada)"))
@@ -511,6 +572,8 @@ def ui_fenomenos(f, pref):
             sel("…cuándo", list(FEN["momento"]), it, "momento_evol", K(pref, iid, "mevo"), fmt=fmt_dic(FEN["momento"]),
                 disabled=not it.get("evol"))
         with c[7]:
+            t_in("…hora", it, "hora_evol", K(pref, iid, "hevo"), disabled=not it.get("evol"), placeholder="24/1800")
+        with c[8]:
             st.write("")
             if len(f["items"]) > 1 and st.button("✕", key=K(pref, iid, "del")):
                 f["items"].pop(j)

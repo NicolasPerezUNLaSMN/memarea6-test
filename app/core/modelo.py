@@ -21,7 +21,7 @@ def nuevo_viento() -> dict:
 
 def nuevo_item_fenomeno() -> dict:
     return {"id": nid(), "conector": "", "prob": "PROB", "fen": [], "cal": "",
-            "momento": "", "evol": "", "momento_evol": ""}
+            "momento": "", "evol": "", "momento_evol": "", "hora_evol": "", "hora_evol_tipo": "el"}
 
 
 def nueva_subzona() -> dict:
@@ -65,6 +65,7 @@ def nuevo_boletin(cat: dict) -> dict:
         "hielos": "",
         "olas": "",
         "olas_excluir": [],
+        "olas_incluir": [],
         "sinopsis": [],
         "zonas": {z["id"]: {"incluir": True, "subzonas": [nueva_subzona()]}
                   for z in todas_las_zonas(cat)},
@@ -103,4 +104,5 @@ def completar(b: dict, cat: dict) -> dict:
     b.setdefault("traducciones", {})
     b.setdefault("olas", "")
     b.setdefault("olas_excluir", [])
+    b.setdefault("olas_incluir", [])
     return b

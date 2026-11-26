@@ -25,8 +25,36 @@ ABREVIATURAS = {
     "direc": "direccion", "visi": "vis", "ff": "frente frio", "fo": "frente ocluido", "fc": "frente calido",
     "fgb": "fuerte gradiente barico", "cpf": "con posicion final", "spf": "sin posicion final",
     "ext": "extiende", "antih": "antihorario", "anithorario": "antihorario", "incr": "aumentando",
-    "decr": "disminuyendo",
+    "decr": "disminuyendo", "des": "desmejorando", "desmej": "desmejorando",
 }
+# Se aplican ANTES de expandir abreviaturas (dependen del contexto)
+PRE_ERRATAS = [
+    (r"\bmej\.?\s+temp\w*", "mejoramientos temporarios"),
+    (r"\bdir\.?\s+variables?\b", "direcciones variables"),
+    (r"\bsin pos\.?\b", "sin posicion"), (r"\bpos\.?\s+final\b", "posicion final"),
+    (r"\bsin mov\.?\b", "sin movimiento"), (r"\bfe\b", "frente estacionario"),
+    (r"\bmat(?:inales?)?\b", ""),
+]
+# Estilo de una sola letra (M, R, F, T, L, MF; VIS B A R OC M; CAMBIANDO AH / H)
+LETRAS_VIS = {"b": "buena", "r": "regular", "m": "mala", "mm": "muy mala", "oc": "ocasionalmente"}
+LETRAS_FUERZA = {"m": "moderados", "r": "regulares", "f": "fuertes", "t": "temporal", "l": "leves", "mf": "muy fuertes"}
+
+
+def _letras(t: str) -> str:
+    t = re.sub(r"\bcon\s+r\b", "con rafagas", t)
+    def vis(m):
+        return "vis " + re.sub(r"\b(mm|oc|[bmr])\b", lambda x: LETRAS_VIS[x.group(1)], m.group(1))
+    t = re.sub(r"\bvis\s+((?:mm|[bmr])\b(?:\s+(?:a|oc|oca|ocnl)\s+(?:mm|[bmr])\b)*)", vis, t)
+    t = re.sub(r"\b(cambiando|cambian|cambia|rotando|rota|rotan)\s+ah\b", r"\1 antihorario", t)
+    t = re.sub(r"\b(cambiando|cambian|cambia|rotando|rota|rotan)\s+h\b", r"\1 horario", t)
+    sigue = (r"(?=\s+(?:a\s+(?:mf|[mrftl])\b|sector|sec|dir|direcciones|de\s+dir|del|con|so|se|ne|nw|no|sw|el|"
+             r"cambiando|aumentando|disminuyendo|rotando)\b|\s*[,.]|\s*$)")
+    for _ in range(2):   # «a r a f»: dos pasadas
+        t = re.sub(rf"(?:(?<=^)|(?<=[:.,]\s)|(?<=[:.,])|(?<=\ba\s)|(?<=\s))\b(mf|[mrftl])\b{sigue}",
+                   lambda m: LETRAS_FUERZA[m.group(1)], t)
+    return t
+
+
 # Erratas y formas habladas frecuentes (expresión regular → reemplazo)
 ERRATAS = [
     (r"\bdela\b", "de la"), (r"\bbranca\b", "blanca"), (r"\ba ?prtir\b", "a partir"), (r"\bapartir\b", "a partir"),
@@ -62,7 +90,7 @@ FENOMENOS = [  # (expresión, clave del catálogo)
     (r"chaparr[oó]n(?:es)?|chubascos?|\bsh\b", "SH"),
     (r"lloviznas?", "LLOVIZNAS"), (r"lluvias?", "LLUVIAS"), (r"tormentas?", "TORMENTAS"),
     (r"nevadas?", "NEVADAS"), (r"neblinas?", "NEBLINAS"), (r"nieblas?", "NIEBLAS"),
-    (r"granizo", "GRANIZO"), (r"inestable", "INESTABLE"),
+    (r"granizo", "GRANIZO"), (r"inestable", "INESTABLE"), (r"precipitacion(?:es)?", "PRECIPITACIONES"),
 ]
 PROBABILIDADES = [
     (r"desmejorando con probabilidad(?:es)? de", "DESMEJORANDO"),
@@ -70,7 +98,8 @@ PROBABILIDADES = [
     (r"probabilidad(?:es)?(?: de)?|probables?", "PROB"),
 ]
 CALIFICATIVOS = [(r"aislad[ao]s?", "AISLADAS"), (r"intermitentes?", "INTERMITENTES"),
-                 (r"(?:algunas )?fuertes?", "FUERTES"), (r"dispers[ao]s?", "DISPERSAS"), (r"ocasionales", "OCASIONALES")]
+                 (r"(?:algunas )?fuertes?", "FUERTES"), (r"dispers[ao]s?", "DISPERSAS"), (r"ocasionales", "OCASIONALES"),
+                 (r"debil(?:es)?", "DEBILES")]
 MOMENTOS = [
     (r"a partir (?:de )?(?:la )?madrugada", "DESDE_MADRUGADA"), (r"a partir (?:de )?(?:la )?mañana", "DESDE_MANANA"),
     (r"a partir (?:de )?(?:la )?tarde", "DESDE_TARDE"), (r"a partir (?:de )?(?:la )?noche", "DESDE_NOCHE"),
@@ -82,7 +111,8 @@ MOMENTOS = [
     (r"hacia la tarde", "HACIA_TARDE"), (r"hacia la noche", "HACIA_NOCHE"),
 ]
 EVOLUCIONES = [(r"(?:con )?(?:mejoramientos? temporari[ao]s|mejoras? temporari[ao]s)", "MEJ_TEMP"),
-               (r"mejorando(?: paulatinamente)?", "MEJORANDO"),
+               (r"\bdesmejorando(?: paulatinamente)?", "DESMEJORANDO"),
+               (r"\bmejorando(?: paulatinamente)?", "MEJORANDO"),
                (r"(?:en )?disipaci[oó]n|disip[aá]ndose", "DISIPANDOSE")]
 RELLENO = r"\b(de|y|e|o|con|el|la|las|los|del|a|al|en|sin|proba|algunas|costeras|vientos?|luego)\b"
 
@@ -109,6 +139,7 @@ drake regulares moderados fuertes leves variables direcciones cambiando cambian 
 antihorario aumentando disminuyendo temporariamente prevaleciendo probables probabilidad lloviznas lluvias
 lluvia chaparrones nieve mezclada nevadas neblinas nieblas niebla bancos granizo tormentas aisladas intermitentes
 mejorando desmejorando mejoramientos temporarios disipandose disipacion madrugada manana tarde noche mediodia
+desmejorando desmejora vigente vigentes mantiene persiste continua ratifica renueva actualizo actualizado precipitaciones debil debiles
 temporales cambio cambios durante luego buena regular mala resto entera copiar copia pegar navtex hielos idem vientos cuña paulatinamente
 fuerte fuerza viento entre alrededor misma mismo nuevo hacia desde mueven mueve provocaria posiciones presion
 ocasionalmente ocasional visibilidad algunas costeras ubicada ubicado anterior quieran sentido corazon guardar
@@ -139,8 +170,14 @@ def normalizar(texto: str) -> str:
     t = re.sub(r"[–—]", "-", t)
     t = re.sub(r"(?<=[a-z])-(?=[a-z])", " ", t)            # centro-este → centro este
     t = re.sub(r"[ \t]+", " ", t)
+    for rx, bien in PRE_ERRATAS:
+        t = re.sub(rx, bien, t)
+    t = _letras(t)
+    sigue = r"(?=\s*\.\s*(?:de|del|a|al|con|y|en|var|variables|ne|nw|se|sw|so|n|s|e|w|o|norte|sur|este|oeste|\d)\b)"
     for abrev, completa in ABREVIATURAS.items():
-        t = re.sub(rf"\b{abrev}\b\.?", completa, t)
+        # «prob. de lluvias» → sin punto; «lluvias aisl. regular» → el punto cierra la oración
+        t = re.sub(rf"\b{abrev}\b{sigue}\s*\.", completa, t)
+        t = re.sub(rf"\b{abrev}\b", completa, t)
     for rx, bien in ERRATAS:
         t = re.sub(rx, bien, t)
     t = corregir_erratas(t)
@@ -165,7 +202,8 @@ def _hhmm(dia, hh, mm=None):
 
 
 HORA_PATRONES = [
-    re.compile(r"\b(?P<pre>el|del|desde el|hasta el|hasta|a partir del?)\s+(?P<d>\d{1,2})\s*/\s*(?P<h>\d{2})(?P<m>\d{2})?(?!\d)"),
+    re.compile(r"\b(?P<pre>el|del|desde el|hasta el|hasta|a partir del?)\s+(?P<d>\d{1,2})\s*/\s*(?P<h>\d{2})(?P<m>\d{2})?(?!\d)"
+               r"(?:\s*(?:z|utc|hs)\b)?"),
     re.compile(r"\b(?P<pre>el|del|desde el|hasta el|hasta|a partir del?)\s+(?P<d>\d{1,2})\s+a\s+las?\s+(?P<h>\d{1,2})"
                r"(?::(?P<m>\d{2}))?(?:\s*(?:hs|horas|utc|z)\b)?"),
     re.compile(r"\b(?P<pre>el|del|desde el|hasta el|hasta|a partir(?: del?)?)\s+(?P<d>\d{1,2})\s+(?P<h>\d{1,2})\s*z\b"),
@@ -271,8 +309,9 @@ def separar_secciones(texto: str) -> dict[str, list[str]]:
 def _alias(cat):
     out = {"costeras": [], "oceanicas": []}
     extra = {"uruguay": ["costa se de uruguay", "se de uruguay", "sudeste de uruguay", "sudeste del uruguay"],
+             "valdes": ["valdes", "peninsula de valdes"],
              "findm": ["costa del fin del mundo"], "malvinas": ["costa malvinas", "costa de malvinas"],
-             "drake": ["area drake"], "valdes": ["peninsula de valdes"], "sanjorge": ["golfo de san jorge"]}
+             "drake": ["area drake"], "sanjorge": ["golfo de san jorge"]}
     for z in todas_las_zonas(cat):
         oficial = re.sub(r"\(.*?\)", "", z["es"]).lower().strip()
         nombres = set(z.get("alias", [])) | {oficial, re.sub(r"^(costa de|costa|area)\s+", "", oficial)}
@@ -511,9 +550,10 @@ def visibilidad(texto):
 
 def _trozos_fenomenos(oracion):
     """Separa «neblinas en disipacion neblinas a partir de la noche» en dos grupos."""
+    empieza_luego = bool(re.match(r"\s*(?:y\s+)?luego\b", oracion))
     partes = [p for p in re.split(r"[,;]?\s*\b(?:y\s+)?luego\b\s*", oracion) if p.strip()]
     out = []
-    for k, p in enumerate(partes):
+    for k, p in enumerate(partes, start=1 if empieza_luego else 0):
         cortes = [0]
         visto_cola = False
         for m in re.finditer(r"\b(?:desmejorando con|baja probabilidad|probabilidad|probables?)\b|"
@@ -532,12 +572,22 @@ def _trozos_fenomenos(oracion):
                     cortes.append(m.start())
         for i, c in enumerate(cortes):
             trozo = p[c:cortes[i + 1] if i + 1 < len(cortes) else len(p)]
+            # «lluvias aisladas y tormentas»: el calificativo es solo de las lluvias
+            cal_rx = "|".join(rx for rx, _ in CALIFICATIVOS)
+            fen_rx = "|".join(rx for rx, _ in FENOMENOS)
+            m = re.search(rf"\b(?:{cal_rx})\b\s*(?:,|\by\b)\s*(?=(?:{fen_rx}))", trozo)
+            if m and any(re.search(rx, trozo[:m.start()]) for rx, _ in FENOMENOS):
+                corte = m.start() + len(re.match(rf"(?:{cal_rx})", trozo[m.start():]).group(0))
+                out.append((trozo[:corte], "LUEGO" if k > 0 and i == 0 else ""))
+                out.append((trozo[m.end():], "Y"))
+                continue
             out.append((trozo, "LUEGO" if k > 0 and i == 0 else ""))
     return out
 
 
 def _item(trozo, conector, dudas, donde):
-    it = {"conector": conector, "prob": "", "fen": [], "cal": "", "momento": "", "evol": "", "momento_evol": ""}
+    it = {"conector": conector, "prob": "", "fen": [], "cal": "", "momento": "", "evol": "", "momento_evol": "",
+          "hora_evol": "", "hora_evol_tipo": "el"}
     t = trozo
     sin_prob = "sin proba" in t
     for rx, clave in PROBABILIDADES:
@@ -578,10 +628,14 @@ def _item(trozo, conector, dudas, donde):
         it["prob"] = ""
         t = t.replace("sin proba", " ")
     hs = horas(trozo)
+    if hs and pos_evol is not None and any(h[0] > pos_evol for h in hs):
+        ini, fin, valor, pre = next(h for h in hs if h[0] > pos_evol)   # «mejorando el 24 a las 18»
+        it["hora_evol"], it["hora_evol_tipo"] = valor, ("desde" if re.search(r"partir|desde", pre) else "el")
+        hs = [h for h in hs if h[0] != ini]
     if hs:
         dudas.append({"donde": donde, "texto": trozo, "motivo": "Los fenómenos no llevan hora en el boletín; "
                       "la hora se omitió. Revisar."})
-        t = sin_horas(t)
+    t = sin_horas(t)
     sobrante = re.sub(RELLENO + r"|[,;:.]|\b\d+\b", " ", t).strip()
     return it, sobrante
 
@@ -591,11 +645,20 @@ def fenomenos(oracion, items, dudas, donde):
         return "sin"
     for trozo, conector in _trozos_fenomenos(oracion):
         it, sobrante = _item(trozo, conector, dudas, donde)
-        if not it["fen"] and (it["evol"] or it["momento"] or it["momento_evol"]) and items:
-            ultimo = items[-1]
-            ultimo["evol"] = ultimo["evol"] or it["evol"]
-            ultimo["momento_evol" if ultimo["evol"] else "momento"] = (
-                ultimo["momento_evol" if ultimo["evol"] else "momento"] or it["momento"] or it["momento_evol"])
+        if not it["fen"] and (it["evol"] or it["momento"] or it["momento_evol"]):
+            # «Mejorando.», «desmejorando hacia el final del periodo», «mej el 24 a las 18»
+            if items and not items[-1]["evol"] and it["evol"]:
+                ultimo = items[-1]
+                ultimo["evol"] = it["evol"]
+                ultimo["momento_evol"] = it["momento_evol"] or it["momento"]
+                ultimo["hora_evol"], ultimo["hora_evol_tipo"] = it["hora_evol"], it["hora_evol_tipo"]
+            elif it["evol"]:      # evolución sola, o una segunda evolución: va como grupo propio
+                it["momento_evol"] = it["momento_evol"] or it["momento"]
+                it["momento"] = ""
+                it["conector"] = it["conector"] or ("LUEGO" if items else "")
+                items.append(it)
+            elif items and not items[-1]["momento"]:
+                items[-1]["momento"] = it["momento"] or it["momento_evol"]
             continue
         if sobrante:
             dudas.append({"donde": donde, "texto": trozo.strip(), "motivo": f"No se reconoció «{sobrante}»; se omitió."})
@@ -647,12 +710,16 @@ def pronostico_zona(cuerpo, dudas, donde):
         dudas.append({"donde": donde, "texto": cuerpo, "motivo": "No se encontró la visibilidad."})
     if obs:
         sz["obs"] = " ".join(obs)
-        sz["obs_en"] = sz["obs"].replace("PREVALECIENDO DEL", "PREVAILING FROM")   # REVISAR
+        sz["obs_en"] = sz["obs"].replace("PREVALECIENDO DEL", "MAINLY FROM")
     return sz
 
 
 # ====================================================================== avisos
-INICIO_AVISO = re.compile(r"^(?:navtex\s+)?(?:se actualiza|actualiz\w*|nuevo aviso|aviso\b|\d{3,4}\b)")
+# Formas de decir que un aviso sigue o se actualiza (con erratas frecuentes)
+ACTUALIZA_RX = re.compile(r"\b(?:se\s+)?a\w{0,2}uali[zs]\w*|\bsi(?:g|gu)e\s+vigente\b|\bcontin[uú]a(?:\s+vigente)?\b|"
+                          r"\bse\s+mantiene(?:\s+vigente)?\b|\bpersiste\b|\b(?:se\s+)?ratific\w*|\b(?:se\s+)?renueva\b|"
+                          r"\bvigente\b|\bupdate\w*")
+INICIO_AVISO = re.compile(r"^(?:navtex\s+)?(?:se actualiza|a\w{0,2}ualiz\w*|sigue vigente|nuevo\b|aviso\b|\d{3,4}\b)")
 SIN_AVISOS = re.compile(r"^(no hay avisos?|sin avisos?|nil|no hay|ninguno)\b")
 
 
@@ -667,6 +734,9 @@ def _area_coords(texto):
     if len(nums) >= 4:
         return f"{nums[0]}S-{nums[1]}S {nums[2]}W-{nums[3]}W", True
     return "", False
+
+
+ORDEN_ZONAS: dict = {}
 
 
 def avisos(lineas, alias_todos, dudas):
@@ -690,13 +760,15 @@ def avisos(lineas, alias_todos, dudas):
             a["numero"] = m.group(1)
             cuerpo = t[m.end():]
         else:
-            cuerpo = re.sub(r"^.*?nuevo aviso\s*:?", "", t)
+            cuerpo = re.sub(r"^.*?\b(?:nuevo aviso|aviso nuevo|nuevo)\s*:?", "", t)
         donde = f"Aviso {a['numero'] or '(sin número)'}"
-        if not a["numero"]:
-            dudas.append({"donde": donde, "texto": texto, "motivo": "El aviso no tiene número: completalo en «Ajuste fino»."})
-        if re.search(r"actualiz", t[:m.start() if m else 40] + " " + cuerpo[:25]):
+        if ACTUALIZA_RX.search(t):
             a["estado"] = "actualiza"
-        cuerpo = re.sub(r"^\s*(?:actualiz\w*|se actualiza)?\s*[:.]?\s*", "", cuerpo)
+        cuerpo = re.sub(r"^\s*[:.]?\s*", "", ACTUALIZA_RX.sub(" ", cuerpo)).strip()
+        cuerpo = re.sub(r"^[:.,\s]+", "", cuerpo)
+        if not a["numero"] and a["estado"] != "nuevo":
+            dudas.append({"donde": donde, "texto": texto, "motivo": "El aviso se actualiza pero no dice qué número: "
+                          "completalo en «Ajuste fino»."})
         if re.match(r"\s*ces[ae]\w*\b", cuerpo):
             a["estado"] = "cese"
             out.append(a)
@@ -740,7 +812,7 @@ def avisos(lineas, alias_todos, dudas):
         a["dir"] = _direccion(md.group(1) if md else efecto)
         m_donde = re.search(r"\b(?:en|entre)\b\s+(.*)$", re.sub(rf"(?:con\s+)?{RAFAGAS_RX}", " ", efecto))
         donde_txt = m_donde.group(1) if m_donde else ""
-        a["zonas"] = zonas_mencionadas(donde_txt, alias_todos)
+        a["zonas"] = sorted(zonas_mencionadas(donde_txt, alias_todos), key=lambda z: ORDEN_ZONAS.get(z, 99))
         if not a["zonas"]:
             a["coords"], dudoso = _area_coords(donde_txt)
             if dudoso:
@@ -833,9 +905,18 @@ def sinopsis(lineas, dudas):
     return out
 
 
-def marcar_navtex(sistemas, lineas, dudas):
-    """Sección NAVTEX al final del borrador: marca los sistemas que nombra."""
+def marcar_navtex(sistemas, avisos_, lineas, dudas):
+    """Sección NAVTEX al final del borrador: marca los avisos y sistemas que nombra."""
     for l in lineas:
+        ma = re.search(r"aviso\s*(\d{2,4})|\b(aviso nuevo|nuevo aviso|nuevo)\b", l)
+        if ma:
+            elegidos = [a for a in avisos_ if (ma.group(1) and a["numero"] == ma.group(1))
+                        or (ma.group(2) and (not a["numero"] or a["estado"] == "nuevo"))]
+            for a in elegidos[:1]:
+                a["navtex"] = True
+            if not elegidos:
+                dudas.append({"donde": "NAVTEX", "texto": l, "motivo": "No se encontró el aviso que se pide para NAVTEX."})
+            continue
         tipo = next((k for rx, k in TIPOS_SIN if re.search(rx, l[:30])), None)
         if not tipo:
             continue          # notas sueltas («no olvidar los hielos»)
@@ -853,6 +934,7 @@ def interpretar(cat: dict, texto: str) -> dict:
     alias = _alias(cat)
     alias_todos = sorted(alias["costeras"] + alias["oceanicas"], key=lambda x: -len(x[0]))
     nombres = {z["id"]: z["es"] for z in todas_las_zonas(cat)}
+    ORDEN_ZONAS.update({z["id"]: i for i, z in enumerate(todas_las_zonas(cat))})   # avisos: zonas de norte a sur
     sec = separar_secciones(normalizar(texto))
 
     # En la sección costera también pueden venir las áreas oceánicas sin título propio
@@ -928,6 +1010,7 @@ def interpretar(cat: dict, texto: str) -> dict:
             zonas.append(z)
 
     sistemas = sinopsis(sec["sinopsis"], dudas)
-    marcar_navtex(sistemas, sec["navtex"], dudas)
-    return {"avisos": avisos(sec["avisos"], alias_todos, dudas), "sinopsis": sistemas,
+    lista_avisos = avisos(sec["avisos"], alias_todos, dudas)
+    marcar_navtex(sistemas, lista_avisos, sec["navtex"], dudas)
+    return {"avisos": lista_avisos, "sinopsis": sistemas,
             "zonas": [z for z in zonas if z["subzonas"] or z["copiar_de"]], "dudas": dudas}

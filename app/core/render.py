@@ -88,7 +88,12 @@ def fuerzas_sostenidas(v) -> list[int]:
 # ------------------------------------------------------------------ fenómenos
 def _item(cat, it, lang):
     fc = cat["fenomenos"]
-    fen = unir(*[fc["lista"][f][lang] for f in it.get("fen", []) if f in fc["lista"]])
+    nombres = [fc["lista"][f][lang] for f in it.get("fen", []) if f in fc["lista"]]
+    union = fc.get("union", {}).get(lang, " ")
+    if union.strip() and len(nombres) > 1:      # inglés: «RAIN AND TSTM», «RAIN, SH AND TSTM»
+        fen = ", ".join(nombres[:-1]) + union + nombres[-1]
+    else:
+        fen = unir(*nombres)
     prob = fc["probabilidad"].get(it.get("prob", ""), {}).get(lang, "")
     cal = fc["calificativo"].get(it.get("cal", ""), {}).get(lang, "")
     mom_d = fc["momento"].get(it.get("momento", ""), {})
@@ -97,7 +102,11 @@ def _item(cat, it, lang):
     nucleo = unir(prob, fen, cal) if lang == "es" else unir(prob, cal, fen)
     cola = unir(evo, mom) if mom_d.get("despues") else unir(mom, evo)
     mom_evo = fc["momento"].get(it.get("momento_evol", ""), {}).get(lang, "")
-    return unir(nucleo, cola, mom_evo)
+    hora_evo = ""
+    if it.get("hora_evol", "").strip() and it.get("evol"):
+        tipo = it.get("hora_evol_tipo") or "el"
+        hora_evo = fc["hora_evolucion"][tipo][lang].format(h=it["hora_evol"].strip())
+    return unir(nucleo, cola, mom_evo, hora_evo)
 
 
 def fenomenos(cat, f, lang):
@@ -238,18 +247,23 @@ def _limpiar_hielo(hc, t):
 
 
 def lineas_olas(cat, b, lang) -> list[str]:
+    """Avisos de olas numerados (ver registro.numerar) y sus ceses."""
     from . import olas
     if not (b.get("olas") or "").strip():
         return []
+    oc = cat["olas"]
     zonas = {z["id"]: z for z in todas_las_zonas(cat)}
-    avisos = olas.seleccionados(b)
-    if not avisos:
-        txt = cat["olas"]["sin_avisos"][lang]
+    numeros, estados = b.get("olas_numeros", {}), b.get("olas_estados", {})
+    out = []
+    for a in olas.seleccionados(b, cat):
+        n = numeros.get(a["clave"], "")
+        texto = olas.linea(cat, zonas, a, lang, n=n, estado=estados.get(str(n), "nuevo"))
+        out.append(texto or (a["original"] if lang == "en" else f"[TRADUCIR: {a['original']}]"))
+    out += [oc["linea_cese"][lang].format(n=n) for n in b.get("olas_ceses", [])]
+    if not out:
+        txt = oc["sin_avisos"][lang]
         return [txt] if txt else []
-    out = [cat["olas"]["titulo"][lang]]
-    for a in avisos:
-        out.append(olas.linea(cat, zonas, a, lang) or (a["original"] if lang == "en" else f"[TRADUCIR: {a['original']}]"))
-    return out
+    return ([oc["titulo"][lang]] if oc["titulo"][lang] else []) + out
 
 
 def hielos(cat, texto, lang):

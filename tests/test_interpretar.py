@@ -29,7 +29,7 @@ def test_borrador_24_7_genera_boletin():
     assert "RIO DE LA PLATA EXTERIOR: SECTOR N 5/4 CON RAFAGAS BAJA PROB DE LLOVIZNAS AISLADAS " \
            "PROB DE NEBLINAS DURANTE LA MAÑANA VIS REGULAR OCNL BUENA" in es
     assert "AREA NORTE (35S- 40S Y 20W- 55W) E DE 35W: SECTOR S 5/6 CON RAFAGAS PROB DE LLOVIZNAS VIS REGULAR" in es
-    assert "SOUTH WEST AREA (50S- 60S AND 40W- 60W): SECTOR W 6 GUST WITH 8 INTENSITY DECR 4 BY 26/0600" in en
+    assert "SOUTH WEST AREA (50S- 60S AND 40W- 60W): SECTOR W 6 GUSTS FORCE 8 DECR 4 BY 26/0600" in en
     errores, advertencias = validar.validar(CAT, b)
     assert errores == ["AREA CENTRO ESTE (40S- 50S Y 20W- 40W): falta la visibilidad."]
     assert any("26/0600" in a for a in advertencias)
@@ -87,25 +87,39 @@ def test_hielos_solo_castellano_se_traduce():
 
 
 def test_olas_solo_avisos_y_debajo_de_los_de_temporal():
-    from core import modelo, olas
+    from core import olas, registro
     b, _ = cargar_24_7()
     b["olas"] = (DIR / "olas_3.txt").read_text(encoding="utf-8")
+    registro.numerar(CAT, b, {"arranque": {}, "corridas": {}})
     es = render.generar(CAT, b, "es").splitlines()
-    i = es.index("AVISO DE OLAS:")
+    i = next(k for k, l in enumerate(es) if l.startswith("AVISO DE OLAS"))
     assert es[i - 1].startswith("AVISO 342")                     # justo debajo de los de temporal
-    assert es[i + 1] == "AREA PASAJE DE DRAKE (55S- 60S Y 60W- 67W) 15/0900-15/2100 UTC: EN EL S 5.0/6.0M DECRECIENDO, DESPLAZANDOSE AL NE"
-    assert len([l for l in es if "UTC: EN EL" in l]) == 6
+    assert es[i] == "AVISO DE OLAS 1: AREA PASAJE DE DRAKE (55S- 60S Y 60W- 67W) 15/0900-15/2100 UTC: EN EL S 5.0/6.0M " \
+                    "DECRECIENDO, DESPLAZANDOSE AL NE"
+    # las subáreas antárticas (ZONA 1…5, Weddell) quedan afuera salvo que se tilden
+    assert len([l for l in es if l.startswith("AVISO DE OLAS")]) == 2
     assert not any("IN THE REST" in l or "EN EL RESTO" in l for l in es)   # solo los WARNING
+    zona1 = next(a for a in olas.leer(b["olas"])["avisos"] if a["area"] == "ZONA 1")
+    b["olas_incluir"] = [zona1["clave"]]
+    registro.numerar(CAT, b, {"arranque": {}, "corridas": {}})
+    assert ": ZONA 1 15/0900-15/2100 UTC: EN EL W 5.5/9.0M DECRECIENDO" in render.generar(CAT, b, "es")
+    b["olas_incluir"] = []
+    registro.numerar(CAT, b, {"arranque": {}, "corridas": {}})
     en = render.generar(CAT, b, "en")
-    assert "WAVE WARNING:\nDRAKE AREA (55S- 60S AND 60W- 67W) 15/0900-15/2100 UTC: AT S 5.0/6.0M DECAYING, MOVING NE" in en
-    # destildar uno
-    b["olas_excluir"] = [olas.leer(b["olas"])["avisos"][0]["clave"]]
-    assert "AREA PASAJE DE DRAKE" not in "\n".join(l for l in render.generar(CAT, b, "es").splitlines() if "UTC: EN EL" in l)
+    assert "WAVE WARNING 1: DRAKE AREA (55S- 60S AND 60W- 67W) 15/0900-15/2100 UTC: AT S 5.0/6.0M DECAYING, MOVING NE" in en
     # archivo sin avisos: no agrega nada
-    b["olas"], b["olas_excluir"] = (DIR / "olas_1.txt").read_text(encoding="utf-8"), []
+    b["olas"] = (DIR / "olas_1.txt").read_text(encoding="utf-8")
+    registro.numerar(CAT, b, {"arranque": {}, "corridas": {}})
     assert "AVISO DE OLAS" not in render.generar(CAT, b, "es")
     # validación: fecha del archivo (15/07) distinta del boletín (24/07)
     b["olas"] = (DIR / "olas_3.txt").read_text(encoding="utf-8")
     _, adv = validar.validar(CAT, b)
     assert any("no parece corresponder" in a for a in adv)
-    assert any("ZONA 1" in a for a in adv)
+
+
+def test_areas_de_olas_del_mapa_de_referencia():
+    from core import olas
+    assert olas.area_info(CAT, "AREA A")[0] == ["mdp"]
+    assert olas.area_info(CAT, "AREA G")[0] == ["malvinas"]
+    assert olas.area_info(CAT, "AREA RIO DE LA PLATA")[0] == ["rdp_int", "rdp_ext"]
+    assert olas.fuera_del_boletin(CAT, "MAR DE WEDDELL NORTE") and olas.fuera_del_boletin(CAT, "ZONA 3")
