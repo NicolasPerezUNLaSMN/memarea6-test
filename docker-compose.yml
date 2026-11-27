@@ -13,6 +13,7 @@ services:
       # Catálogo de términos: se puede editar sin reconstruir la imagen
       # (reiniciar el contenedor después de editar).
       - ./app/config/catalogo.yaml:/app/config/catalogo.yaml:ro
-      # Credenciales del ingreso con Microsoft/Google (ver .streamlit/secrets.toml.example).
-      # Si no existe el archivo, comentar esta línea: la app funciona sin ingreso.
-      - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
+      # Credenciales del ingreso con Microsoft/Google: descomentar SOLO cuando
+      # exista .streamlit/secrets.toml (ver secrets.toml.example). Si el archivo
+      # no existe, Docker crea una carpeta con ese nombre en su lugar.
+      # - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro

@@ -200,7 +200,7 @@ las estadísticas. Sin ese archivo funciona como antes (nombre a mano).
    sueltas en `correos`). Con Google es imprescindible.
 
 `secrets.toml` no se sube a git ni entra en la imagen Docker: en el servidor
-se monta como volumen (ver `docker-compose.yml`). En Streamlit Cloud se carga
+se monta como volumen (descomentar la línea en `docker-compose.yml`). En Streamlit Cloud se carga
 en *Settings → Secrets*.
 
 ## Probar la interpretación con borradores reales
