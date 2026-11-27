@@ -16,10 +16,35 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core import almacen, catalogo, estadisticas, ia, interpretar, modelo, palabras, registro, render, validar  # noqa: E402
+from core import (acceso, almacen, catalogo, estadisticas, ia, interpretar, modelo, palabras,  # noqa: E402
+                  registro, render, tablero, validar)
 
 ESTATICO = Path(__file__).resolve().parent / "static"
 st.set_page_config(page_title="meMareaVI", page_icon=str(ESTATICO / "favicon.png"), layout="wide")
+
+# ======================================================================
+# Ingreso (solo si hay proveedores en .streamlit/secrets.toml; si no, nombre a mano)
+# ======================================================================
+PROVEEDORES = acceso.proveedores()
+if PROVEEDORES:
+    if not st.user.is_logged_in:
+        _, centro, _ = st.columns([1, 1.2, 1])
+        with centro:
+            st.markdown("## meMareaVI")
+            st.caption("Boletín meteorológico para navegantes · METAREA VI")
+            st.write("Ingresá con tu cuenta institucional.")
+            for p in PROVEEDORES:
+                st.button(f"Ingresar con {acceso.NOMBRES.get(p, p.title())}", on_click=st.login, args=(p,),
+                          type="primary" if p == PROVEEDORES[0] else "secondary", width="stretch")
+        st.stop()
+    USUARIO, CORREO = acceso.identidad(st.user.to_dict())
+    if not acceso.permitido(CORREO, acceso.reglas()):
+        st.error(f"La cuenta {CORREO or '(sin correo)'} no tiene acceso a meMareaVI. "
+                 "Pedí que la habiliten o ingresá con otra cuenta.")
+        st.button("Salir", on_click=st.logout)
+        st.stop()
+    st.session_state.autor = USUARIO
+
 CAT = catalogo.cargar()
 ZONAS = {z["id"]: z for z in catalogo.todas_las_zonas(CAT)}
 DIRS = CAT["viento"]["direcciones"]
@@ -56,8 +81,8 @@ def generar_salida():
     registro.numerar(CAT, ss.b)                     # números nuevos, olas y ceses sugeridos
     ss.salida = render.generar_todo(CAT, ss.b)
     ss.foto = foto(ss.b)
-    ss.guardado = almacen.guardar(ss.b, ss.salida, ss.get("autor", ""))
-    if not validar.validar(CAT, ss.b)[0]:           # registro y estadísticas: solo boletines sin errores
+    if not validar.validar(CAT, ss.b)[0]:           # archivo, registro y estadísticas: solo boletines sin errores
+        ss.guardado = almacen.guardar(ss.b, ss.salida, ss.get("autor", ""))
         registro.registrar(CAT, ss.b, autor=ss.get("autor", ""))
         estadisticas.exportar(CAT, ss.b, autor=ss.get("autor", ""))
     ss.gen += 1
@@ -120,21 +145,25 @@ with st.sidebar:
     t = render.tiempos(B)
     st.caption(f"Encabezado **WWST01 SABM {t['id']}** · válido hasta "
                f"{t['fin']:%d/%m} {t['fin_hora']} UTC · sinopsis de las {t['sinop']} UTC")
-    ss.autor = st.text_input("Pronosticador/a", value=ss.get("autor", ""), key="autor_in")
+    if PROVEEDORES:
+        c_u, c_s = st.columns([3, 1], vertical_alignment="center")
+        c_u.caption(f"Pronosticador/a: **{ss.autor}**")
+        c_s.button("Salir", on_click=st.logout, key="salir")
+    else:
+        ss.autor = st.text_input("Pronosticador/a", value=ss.get("autor", ""), key="autor_in")
 
     st.divider()
     st.subheader("Historial")
     guardados = almacen.listar()
     if guardados:
-        if st.button("Partir del último boletín", use_container_width=True,
-                     help=f"Trae el texto y los datos de {guardados[0]} y avanza a la corrida siguiente."):
+        if st.button("Partir del último boletín", width="stretch",
+                     help=f"Trae los datos de {guardados[0]} (se ven en «Ajuste fino») y avanza a la corrida "
+                          "siguiente. El borrador no se guarda: el texto claro arranca en blanco."):
             recargar(modelo.siguiente_desde(almacen.cargar(guardados[0])))
-        elegido = st.selectbox("Boletines guardados", guardados)
-        if st.button("Abrir tal cual", use_container_width=True):
-            recargar(almacen.cargar(elegido))
+        st.caption("Los boletines emitidos se consultan en la pestaña «Archivo».")
     else:
         st.caption("Todavía no hay boletines guardados.")
-    if st.button("Empezar en blanco", use_container_width=True):
+    if st.button("Empezar en blanco", width="stretch"):
         recargar(modelo.nuevo_boletin(CAT))
 
     with st.expander("Numeración de avisos"):
@@ -151,23 +180,15 @@ with st.sidebar:
         ult_o = c1.number_input("Último de olas", value=int(arr.get("olas") or 0), step=1, min_value=0, key="arr_o")
         vig_txt = c2.text_input("Vigentes de temporal", value=", ".join(map(str, arr.get("vigentes_viento", []))),
                                 key="arr_vig", placeholder="483, 484")
-        if st.button("Guardar punto de partida", use_container_width=True):
+        if st.button("Guardar punto de partida", width="stretch"):
             reg_actual["arranque"] = {"anio": int(anio), "viento": int(ult_v), "olas": int(ult_o),
                                       "vigentes_viento": [int(x) for x in re.findall(r"\d+", vig_txt)]}
             registro.guardar(reg_actual)
             st.success("Guardado.")
 
-    with st.expander("Datos para estadísticas"):
-        st.caption("Avisos y pronósticos de cada boletín generado sin errores, en CSV (se abren con Excel).")
-        for ruta in estadisticas.archivos():
-            st.download_button(f"⬇ {ruta.name}", ruta.read_bytes(), file_name=ruta.name, mime="text/csv",
-                               use_container_width=True, key=f"csv_{ruta.name}")
-        if not estadisticas.archivos():
-            st.caption("Todavía no hay datos.")
-
     with st.expander("Importar / exportar datos"):
         st.download_button("Descargar datos (.json)", json.dumps(B, ensure_ascii=False, indent=1),
-                           file_name=f"boletin_{B['fecha']}_{B['corrida']}Z.json", use_container_width=True)
+                           file_name=f"boletin_{B['fecha']}_{B['corrida']}Z.json", width="stretch")
         subido = st.file_uploader("Abrir datos .json", type="json")
         if subido is not None and ss.json_importado != subido.file_id:
             ss.json_importado = subido.file_id
@@ -183,7 +204,8 @@ st.markdown(
     "</div></div>",
     unsafe_allow_html=True,
 )
-tab_bol, tab_fino, tab_pal = st.tabs(["Boletín", "Ajuste fino", "Palabras habilitadas"])
+tab_bol, tab_fino, tab_arch, tab_est, tab_pal = st.tabs(
+    ["Boletín", "Ajuste fino", "Archivo", "Estadísticas", "Palabras habilitadas"])
 
 # ======================================================================
 # BOLETÍN: texto claro → resultado
@@ -252,7 +274,7 @@ with tab_bol:
                             excluir.add(a["clave"])
                     B["olas_excluir"], B["olas_incluir"] = sorted(excluir), sorted(incluir)
 
-        if st.button("Interpretar y generar", type="primary", use_container_width=True,
+        if st.button("Interpretar y generar", type="primary", width="stretch",
                      disabled=not ss.texto.strip()):
             with st.spinner("Leyendo el pronóstico…"):
                 try:
@@ -325,17 +347,20 @@ with tab_bol:
                 st.markdown(dibujo, unsafe_allow_html=True)
                 st.download_button("⬇ Mapa (.svg)", dibujo.encode("utf-8"), file_name=f"mapa_avisos_{nombres['es'][13:19]}.svg",
                                    mime="image/svg+xml")
-            st.caption("Se puede retocar el texto antes de descargar; un cambio en un idioma no pasa al otro.")
+            st.caption("Se puede retocar el texto antes de descargar; un cambio en un idioma no pasa al otro. "
+                       "Al descargar, el archivo guarda la versión retocada.")
             sep = CAT["encabezado"]["separador_combinado"]
+            finales = {"es": es, "en": en, "comb": f"{es}{sep}\n\n{en}", "navtex": nav}
+            guardar_final = {"on_click": almacen.guardar_textos, "args": (copy.deepcopy(B), finales)}
             c = st.columns(4)
             c[0].download_button("⬇ Castellano", almacen.a_bytes(es), file_name=nombres["es"], mime="text/plain",
-                                 use_container_width=True, disabled=bool(errores))
+                                 width="stretch", disabled=bool(errores), **guardar_final)
             c[1].download_button("⬇ Inglés", almacen.a_bytes(en), file_name=nombres["en"], mime="text/plain",
-                                 use_container_width=True, disabled=bool(errores))
-            c[2].download_button("⬇ Ambos", almacen.a_bytes(f"{es}{sep}\n\n{en}"), file_name=nombres["comb"],
-                                 mime="text/plain", use_container_width=True, disabled=bool(errores))
+                                 width="stretch", disabled=bool(errores), **guardar_final)
+            c[2].download_button("⬇ Ambos", almacen.a_bytes(finales["comb"]), file_name=nombres["comb"],
+                                 mime="text/plain", width="stretch", disabled=bool(errores), **guardar_final)
             c[3].download_button("⬇ NAVTEX", almacen.a_bytes(nav), file_name=nombres["navtex"], mime="text/plain",
-                                 use_container_width=True, disabled=bool(errores))
+                                 width="stretch", disabled=bool(errores), **guardar_final)
 
 # ======================================================================
 # AJUSTE FINO: datos estructurados
@@ -690,6 +715,138 @@ with tab_fino:
     with s_tl:
         ui_textos_libres()
 
+# ======================================================================
+# ARCHIVO: boletines emitidos
+# ======================================================================
+def rango_fechas(key, dias=30):
+    hoy = dt.date.today()
+    manana = hoy + dt.timedelta(days=1)       # la corrida 00 UTC de mañana ya se emite hoy
+    r = st.date_input("Período", value=(hoy - dt.timedelta(days=dias), manana), format="DD/MM/YYYY", key=key,
+                      help="Fecha de inicio de validez de cada corrida.")
+    if isinstance(r, (tuple, list)) and len(r) == 2:
+        return r[0], r[1]
+    uno = r[0] if isinstance(r, (tuple, list)) and r else (r or hoy)    # mientras se elige la segunda fecha
+    return uno, uno
+
+
+def nombre_corrida(n):
+    return f"{almacen.fecha_de(n):%d/%m/%Y} · {n[9:11]} UTC"
+
+
+with tab_arch:
+    st.caption("Boletines emitidos (generados sin errores): castellano, inglés y NAVTEX. Los borradores no se guardan.")
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        desde, hasta = rango_fechas("arch_rango")
+    buscar_arch = c2.text_input("Buscar en los textos", placeholder="ej.: AVISO 491, DRAKE, TEMPORAL FUERTE…",
+                                key="arch_buscar").strip().upper()
+    corridas = almacen.listar_entre(desde, hasta)
+    if buscar_arch:
+        corridas = [n for n in corridas if any(buscar_arch in t.upper() for _, t in almacen.textos(n).values())]
+    if not corridas:
+        st.info("No hay boletines en ese período." if not buscar_arch else "Ningún boletín del período tiene ese texto.")
+    else:
+        import io
+        import zipfile
+        zbuf = io.BytesIO()
+        with zipfile.ZipFile(zbuf, "w", zipfile.ZIP_DEFLATED) as z:
+            for n in corridas:
+                for _, (archivo, texto) in almacen.textos(n).items():
+                    z.writestr(f"{n}/{archivo}", almacen.a_bytes(texto))
+        c_sel, c_zip = st.columns([3, 1], vertical_alignment="bottom")
+        elegido = c_sel.selectbox(f"Boletín ({len(corridas)} en el período)", corridas, format_func=nombre_corrida,
+                                  key="arch_sel")
+        c_zip.download_button("⬇ Todo el período (.zip)", zbuf.getvalue(), file_name=f"boletines_{desde:%Y%m%d}_"
+                              f"{hasta:%Y%m%d}.zip", mime="application/zip", width="stretch")
+        datos_arch = almacen.cargar(elegido)
+        st.caption(" · ".join(x for x in [f"Pronosticador/a: **{datos_arch.get('autor') or '—'}**",
+                                          f"guardado {datos_arch['guardado'][:16].replace('T', ' ')}"
+                                          if datos_arch.get("guardado") else ""] if x))
+        txts = almacen.textos(elegido)
+        pes = st.tabs(["WWST01 · castellano", "WWST02 · inglés", "WWST03 · NAVTEX"])
+        for pes_i, clave in zip(pes, ("es", "en", "navtex")):
+            with pes_i:
+                if clave not in txts:
+                    st.caption("No está guardado.")
+                    continue
+                archivo, texto = txts[clave]
+                st.code(texto, language=None, wrap_lines=True)
+                st.download_button(f"⬇ {archivo}", almacen.a_bytes(texto), file_name=archivo, mime="text/plain",
+                                   key=f"arch_dl_{elegido}_{clave}")
+        if st.button("Abrir en el editor", help="Carga los datos de este boletín en «Boletín» y «Ajuste fino» "
+                                                "(por ejemplo, para corregirlo y volver a emitirlo)."):
+            recargar(almacen.cargar(elegido))
+
+# ======================================================================
+# ESTADÍSTICAS
+# ======================================================================
+with tab_est:
+    c1, _ = st.columns([1, 2])
+    with c1:
+        e_desde, e_hasta = rango_fechas("est_rango")
+    res = tablero.calcular(e_desde, e_hasta)
+    if res["vacio"]:
+        st.info("No hay boletines emitidos en ese período.")
+    else:
+        m = st.columns(5)
+        m[0].metric("Boletines", res["boletines"], help=f"Emitidos en {res['dias_con_boletin']} días.")
+        m[1].metric("Avisos temporal", res["avisos_temporal"], help="Avisos de temporal: números distintos vigentes en el período.")
+        m[2].metric("Avisos olas", res["avisos_olas"], help="Avisos de olas: números distintos vigentes en el período.")
+        m[3].metric("Con aviso", res["corridas_con_aviso"], help="Corridas con algún aviso de temporal vigente.")
+        m[4].metric("Fuerza máx.", res["fuerza_max"] if res["fuerza_max"] is not None else "—",
+                    help=f"Fuerza máxima pronosticada (Beaufort), en {res['zona_mas_ventosa']}."
+                    if res["zona_mas_ventosa"] else None)
+
+        g1, g2 = st.columns(2)
+        dia = res["por_dia"].set_index("fecha")
+        with g1:
+            st.markdown("**Avisos vigentes por día**")
+            st.bar_chart(dia[["avisos_temporal", "avisos_olas"]].rename(
+                columns={"avisos_temporal": "Temporal", "avisos_olas": "Olas"}), height=260)
+        with g2:
+            st.markdown("**Fuerza máxima pronosticada por día** (Beaufort, todas las zonas)")
+            st.bar_chart(dia[["fuerza_max"]].fillna(0).rename(columns={"fuerza_max": "Fuerza máxima"}), height=260,
+                         color="#E0563A")
+
+        st.markdown("**Por zona**")
+        st.dataframe(res["por_zona"].drop(columns="zona_id"), hide_index=True, width="stretch",
+                     column_config={
+                         "zona": "Zona", "corridas": "Corridas",
+                         "fuerza_max": st.column_config.NumberColumn("Fuerza máx.", format="%d"),
+                         "fuerza_media": st.column_config.NumberColumn("Fuerza máx. promedio", format="%.1f"),
+                         "corridas_f8": st.column_config.ProgressColumn(
+                             "Con fuerza ≥ 8", format="%d", min_value=0, max_value=int(res["por_zona"]["corridas"].max())),
+                         "con_aviso": "Con aviso de temporal", "con_fenomenos": "Con fenómenos",
+                         "vis_mala": "Vis. mala o muy mala"})
+
+        g3, g4 = st.columns([3, 2])
+        with g3:
+            st.markdown("**Fenómenos más pronosticados** (zonas × corridas)")
+            fen_df = res["fenomenos"].copy()
+            fen_df["fenomeno"] = fen_df["fenomeno"].map(lambda k: FEN["lista"].get(k, {}).get("es", k))
+            if fen_df.empty:
+                st.caption("Sin fenómenos en el período.")
+            else:
+                st.bar_chart(fen_df.set_index("fenomeno"), horizontal=True, height=max(160, 32 * len(fen_df)))
+        with g4:
+            st.markdown("**Boletines por pronosticador/a**")
+            st.dataframe(res["por_autor"], hide_index=True, width="stretch",
+                         column_config={"autor": "Pronosticador/a", "boletines": "Boletines"})
+
+        st.markdown("**Avisos del período**")
+        st.dataframe(res["avisos"], hide_index=True, width="stretch", column_config={
+            "serie": "Serie", "numero": "N°", "primera": "Primera vez", "ultima": "Última vez", "corridas": "Corridas",
+            "estado_final": "Último estado", "fuerza": "Fuerza", "zonas": "Zonas", "coordenadas": "Coordenadas",
+            "texto": st.column_config.TextColumn("Texto (última versión)", width="large")})
+
+    with st.expander("Datos completos (CSV, se abren con Excel)"):
+        st.caption("Una fila por aviso y por zona en cada corrida emitida, para análisis y verificación.")
+        for ruta in estadisticas.archivos():
+            st.download_button(f"⬇ {ruta.name}", ruta.read_bytes(), file_name=ruta.name, mime="text/csv",
+                               key=f"csv_{ruta.name}")
+        if not estadisticas.archivos():
+            st.caption("Todavía no hay datos.")
+
 with tab_pal:
     secciones = palabras.cargar()
     st.caption("Formas de escribir el borrador que la app reconoce. Mayúsculas, minúsculas y tildes dan igual. "
@@ -697,9 +854,9 @@ with tab_pal:
     c_bus, c_md, c_csv = st.columns([3, 1, 1], vertical_alignment="bottom")
     buscar = c_bus.text_input("Buscar", placeholder="ej.: temporal, MF, VIS, FF…", key="pal_buscar")
     c_md.download_button("Descargar (.md)", palabras.a_markdown(secciones), "palabras_habilitadas.md",
-                         "text/markdown", use_container_width=True)
+                         "text/markdown", width="stretch")
     c_csv.download_button("Descargar (.csv)", palabras.a_csv(secciones), "palabras_habilitadas.csv",
-                          "text/csv", use_container_width=True)
+                          "text/csv", width="stretch")
     visibles = palabras.filtrar(secciones, buscar)
     if not visibles:
         st.info("No hay ninguna palabra con ese texto.")
@@ -708,4 +865,4 @@ with tab_pal:
             if s.get("nota"):
                 st.caption(s["nota"])
             st.dataframe([{"Se puede escribir": f["escribe"], "En el boletín": f["significa"]} for f in s["filas"]],
-                         hide_index=True, use_container_width=True)
+                         hide_index=True, width="stretch")

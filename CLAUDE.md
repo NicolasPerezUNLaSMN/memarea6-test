@@ -34,6 +34,10 @@ Texto claro → interpretación (reglas, sin IA) → datos del boletín → cont
 | `app/core/olas.py` | Lee el archivo de olas (BOL_METAREA_VI_ING), solo líneas WARNING |
 | `app/core/mapa.py` | Mapa SVG de zonas en aviso |
 | `app/core/estadisticas.py` | CSV para estadísticas y verificación |
+| `app/core/tablero.py` | Resumen de estadísticas entre fechas (pestaña «Estadísticas») |
+| `app/core/almacen.py` | Archivo de boletines finales (sin borradores) |
+| `app/core/acceso.py` | Ingreso con Microsoft/Google y quién puede entrar |
+| `app/core/palabras.py` | Palabras habilitadas (`config/palabras_habilitadas.yaml`) |
 | `app/config/catalogo.yaml` | Todo el vocabulario, traducciones, zonas, estaciones NAVTEX, geometría del mapa |
 
 ## Reglas del proyecto
@@ -53,7 +57,10 @@ Texto claro → interpretación (reglas, sin IA) → datos del boletín → cont
 - **Olas**: solo las líneas WARNING. Áreas A–G del archivo = Mar del Plata, Bahía Blanca, Península Valdés, Golfo San Jorge, Patagonia Sur, Fin del Mundo, Malvinas (mapa de referencia del SMN). Zona 1–5, Weddell y Bellingshausen son subáreas antárticas fuera del boletín (destildadas por defecto).
 - **Inglés**: estilo de boletín marino, no literal (GUSTS FORCE 8, STRONG PRESSURE GRADIENT WILL CAUSE, TEMPORARY IMPROVEMENTS, SLEET, TSTM, FROM AFTERNOON, «RAIN AND TSTM»).
 - **Formato**: replica los boletines emitidos (renglones en blanco, encabezado partido). Errores del sistema viejo corregidos a propósito (fechas truncadas, «SOBRE» colgado, NIGTH, LUEGOPROB…).
-- **Estadísticas**: CSV por año en `DATA_DIR/estadisticas/`, sin base de datos.
+- **Estadísticas**: CSV por año en `DATA_DIR/estadisticas/`, sin base de datos; la pestaña «Estadísticas» los resume entre fechas (`core/tablero.py`).
+- **Archivo**: se guardan solo los boletines finales (WWST01/02/03 + datos .json), nunca el borrador en texto claro (`almacen.NO_SE_GUARDA`).
+- **Vocabulario**: las formas nuevas (tablas de `reglas.py`, catálogo, `palabras_habilitadas.yaml`) las agrega el equipo de desarrollo, con test. Los pronosticadores solo consultan la lista desde la app.
+- **Ingreso**: login nativo de Streamlit con Microsoft y/o Google (`core/acceso.py`), activo solo si hay `.streamlit/secrets.toml`; acceso limitado por dominio/correo en `[acceso]`.
 - **Producción**: contenedor Docker en el SMN, una sola instancia, `data/` montada y con backup. Streamlit Cloud (repo personal `memarea6-test`) es solo para pruebas: su `data/` se borra en cada reinicio.
 
 ## Documentación

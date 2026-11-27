@@ -105,8 +105,8 @@ boletines sin errores. La primera vez se carga, en la barra lateral →
 ## Datos para estadísticas y verificación
 
 Cada boletín generado sin errores agrega filas a dos CSV por año en
-`data/estadisticas/` (se descargan desde la barra lateral → «Datos para
-estadísticas»):
+`data/estadisticas/` (se descargan desde la pestaña «Estadísticas» → «Datos
+completos»):
 
 - `avisos_AAAA.csv`: una fila por aviso de temporal y de olas en cada corrida
   (número, estado, causa, fuerza Beaufort, dirección, zonas, coordenadas,
@@ -118,6 +118,15 @@ estadísticas»):
 
 Separador «;» y UTF-8 con BOM: se abren directo con Excel en castellano, y con
 pandas o R. Sin base de datos; volver a generar una corrida reemplaza sus filas.
+
+### Pestaña «Estadísticas»
+
+Resumen entre dos fechas, calculado de esos CSV: boletines emitidos, avisos de
+temporal y de olas (números distintos vigentes), corridas con aviso, fuerza
+máxima pronosticada; avisos y fuerza máxima por día; por zona (fuerza máxima y
+promedio, corridas con fuerza ≥ 8, con aviso, con fenómenos, con visibilidad
+mala); fenómenos más pronosticados; boletines por pronosticador; y la lista de
+avisos del período con su último texto.
 
 ## Mapa de avisos
 
@@ -164,12 +173,35 @@ desactivados (`encabezado.caracteres_control`).
 ## Uso diario (pronosticador)
 
 1. Elegir fecha y corrida en la barra lateral (o **Partir del último
-   boletín**, que trae el texto anterior para editarlo y avanza la corrida).
+   boletín**, que trae los datos anteriores a «Ajuste fino» y avanza la corrida).
 2. Arrastrar el Word o escribir el texto, y pegar el bloque de hielos.
 3. **Interpretar y generar**. Revisar dudas y controles, y descargar.
 
-Cada boletín generado queda guardado en `./data/boletines/` (texto claro y
-datos en `.json`, y los tres `.txt`).
+Solo se guardan los boletines finales (generados sin errores), en
+`./data/boletines/`: WWST01, WWST02, el combinado y WWST03 en `.txt`, y sus
+datos en `.json` para reabrirlos. Si se retoca el texto antes de descargarlo,
+se guarda la versión retocada. **El borrador en texto claro no se guarda.**
+Se consultan en la pestaña «Archivo» (por período, con búsqueda en los textos
+y descarga en .zip).
+
+## Ingreso con cuenta Microsoft o Google
+
+Opcional, con el login nativo de Streamlit (OpenID Connect). Si existe
+`.streamlit/secrets.toml` con proveedores en `[auth]`, la app pide ingresar y
+el nombre de la cuenta queda como pronosticador/a en el archivo, el registro y
+las estadísticas. Sin ese archivo funciona como antes (nombre a mano).
+
+1. Registrar la app en **Microsoft Entra ID** (tenant del SMN, tipo «Web») y/o
+   en **Google Cloud** (cliente OAuth «Aplicación web»), con la URI de
+   redirección `https://<dirección de la app>/oauth2callback`.
+2. Copiar `.streamlit/secrets.toml.example` como `.streamlit/secrets.toml` y
+   completar `client_id`, `client_secret`, el tenant y un `cookie_secret`.
+3. Limitar quién entra en `[acceso]` (`dominios = ["smn.gob.ar"]`, y cuentas
+   sueltas en `correos`). Con Google es imprescindible.
+
+`secrets.toml` no se sube a git ni entra en la imagen Docker: en el servidor
+se monta como volumen (ver `docker-compose.yml`). En Streamlit Cloud se carga
+en *Settings → Secrets*.
 
 ## Probar la interpretación con borradores reales
 
