@@ -1,0 +1,136 @@
+# Palabras habilitadas: lo que el intérprete (sin IA) entiende del borrador.
+#
+# Se muestra en la app (pestaña «Palabras habilitadas») y se puede descargar
+# para compartir con los pronosticadores. Mayúsculas, minúsculas y tildes
+# dan igual. Si se agrega una forma nueva en reglas.py, sumarla también acá.
+#
+# Campos: escribe = formas válidas (separadas por « · »); significa = qué
+# sale en el boletín; clave = término de la escala de viento. En las filas
+# con clave, tests/test_palabras.py comprueba que cada forma se interprete
+# con esa fuerza.
+
+secciones:
+  - titulo: Intensidad del viento
+    nota: >-
+      Se puede escribir la palabra, la abreviatura o la letra sola (estilo «M SECTOR N»,
+      «R A F SECTOR W»). La conversión a Beaufort todavía está marcada REVISAR en el catálogo.
+    filas:
+      - {escribe: "leves · leve · lev · L", significa: "LEVES → fuerza 3", clave: LEVES}
+      - {escribe: "moderados · moderado · mod · M", significa: "MODERADOS → fuerza 4", clave: MODERADOS}
+      - {escribe: "regulares · reg · R", significa: "REGULARES → fuerza 5", clave: REGULARES}
+      - {escribe: "fuertes · fuerte · fte · ftes · F", significa: "FUERTES → fuerza 6", clave: FUERTES}
+      - {escribe: "muy fuertes · muy fuerte · MF", significa: "MUY FUERTES → fuerza 7", clave: MUY_FUERTES}
+      - {escribe: "temporal · temp · T", significa: "TEMPORAL → fuerza 8", clave: TEMPORAL}
+      - {escribe: "temporal fuerte · TF", significa: "TEMPORAL FUERTE → fuerza 9", clave: TEMPORAL_FUERTE}
+      - {escribe: "temporal muy fuerte · TMF", significa: "TEMPORAL MUY FUERTE → fuerza 10", clave: TEMPORAL_MUY_FUERTE}
+      - {escribe: "M A R · R A F · MF A F · moderados a regulares", significa: "Dos fuerzas: 4/5, 5/6, 7/6…"}
+
+  - titulo: Dirección del viento
+    nota: N, S, E y W (u O) van como «SECTOR N»; las intermedias van solas (NE, SW…).
+    filas:
+      - {escribe: "sector N · del norte · N", significa: "SECTOR N"}
+      - {escribe: "sector S · del sur · S", significa: "SECTOR S"}
+      - {escribe: "sector E · del este · E", significa: "SECTOR E"}
+      - {escribe: "sector W · sector O · del oeste", significa: "SECTOR W"}
+      - {escribe: "NE · noreste · nordeste", significa: "NE"}
+      - {escribe: "NW · NO · noroeste", significa: "NW"}
+      - {escribe: "SE · sudeste · sureste", significa: "SE"}
+      - {escribe: "SW · SO · sudoeste · suroeste", significa: "SW"}
+      - {escribe: "direcciones variables · dir variables · dd variables · de dir variables", significa: "VRB"}
+
+  - titulo: Ráfagas
+    filas:
+      - {escribe: "con ráfagas · con raf · con R", significa: "CON RAFAGAS"}
+      - {escribe: "con ráfagas de temporal · con R de T · ráfagas de muy fuertes", significa: "RAFAGAS CON INTENSIDAD 8 / 7…"}
+
+  - titulo: Cambios del viento
+    filas:
+      - {escribe: "aumentando · aumenta · incrementando · incr", significa: "INCR"}
+      - {escribe: "disminuyendo · disminuye · decr", significa: "DECR"}
+      - {escribe: "cambiando / rotando antihorario · AH · antih · anti", significa: "BACK"}
+      - {escribe: "cambiando / rotando horario · H", significa: "VEER"}
+      - {escribe: "cambiando a … (sin sentido)", significa: "VEER, y queda como duda para revisar"}
+      - {escribe: "temporariamente · temporalmente", significa: "TEMPO"}
+      - {escribe: "el 27/15Z · el 2800Z · el 27 a las 15", significa: "EL 27/1500 · EL 28/0000"}
+
+  - titulo: Visibilidad
+    filas:
+      - {escribe: "buena · B", significa: "BUENA"}
+      - {escribe: "regular · R", significa: "REGULAR"}
+      - {escribe: "mala · M", significa: "MALA"}
+      - {escribe: "muy mala · MM", significa: "MUY MALA"}
+      - {escribe: "VIS R A M · regular a mala", significa: "REGULAR A MALA"}
+      - {escribe: "VIS B OC R · ocasionalmente · ocasional · ocnl · oca", significa: "BUENA OCNL REGULAR"}
+
+  - titulo: Fenómenos
+    filas:
+      - {escribe: "chaparrones · chaparrón · chubascos · SH", significa: "SH"}
+      - {escribe: "lluvias · lluvia", significa: "LLUVIAS"}
+      - {escribe: "lloviznas", significa: "LLOVIZNAS"}
+      - {escribe: "tormentas · tor", significa: "TORMENTAS"}
+      - {escribe: "lluvia y nieve mezclada", significa: "LLUVIA Y NIEVE MEZCLADA"}
+      - {escribe: "nevadas", significa: "NEVADAS"}
+      - {escribe: "chaparrones de nieve / de granizo", significa: "SH DE NIEVE / SH DE GRANIZO"}
+      - {escribe: "nieblas · neblinas · bancos de niebla", significa: "NIEBLAS · NEBLINAS · BANCOS DE NIEBLA"}
+      - {escribe: "granizo · precipitaciones · inestable", significa: "GRANIZO · PRECIPITACIONES · INESTABLE"}
+      - {escribe: "sin fenómenos", significa: "(nada)"}
+
+  - titulo: Probabilidad y calificativos
+    filas:
+      - {escribe: "prob de · proba · probab · probabilidad de · probables", significa: "PROB DE"}
+      - {escribe: "baja prob de", significa: "BAJA PROB DE"}
+      - {escribe: "desmejorando con prob de", significa: "DESMEJORANDO CON PROB DE"}
+      - {escribe: "aisladas · aisl", significa: "AISLADAS"}
+      - {escribe: "intermitentes", significa: "INTERMITENTES"}
+      - {escribe: "aisladas intermitentes", significa: "AISLADAS INTERMITENTES"}
+      - {escribe: "fuertes · dispersas · ocasionales · débiles", significa: "FUERTES · DISPERSAS · OCASIONALES · DEBILES"}
+
+  - titulo: Evolución y momento del día
+    filas:
+      - {escribe: "mejorando · mej", significa: "MEJORANDO"}
+      - {escribe: "mejoramientos temporarios · mej temp · mejoramientos temp · mejoras temporarias", significa: "MEJORAMIENTOS TEMPORARIOS"}
+      - {escribe: "desmejorando · des · desmej", significa: "DESMEJORANDO"}
+      - {escribe: "en disipación · disipándose", significa: "DISIPANDOSE"}
+      - {escribe: "a partir de la madrugada / mañana / tarde / noche · a partir del mediodía", significa: "A PARTIR DE LA …"}
+      - {escribe: "durante / en / por la madrugada, mañana, tarde, noche", significa: "DURANTE LA …"}
+      - {escribe: "hacia la madrugada, mañana, tarde, noche · hacia el final del período", significa: "HACIA LA … · HACIA EL FINAL DEL PERIODO"}
+      - {escribe: "mad · madrug", significa: "madrugada"}
+
+  - titulo: Sinopsis
+    nota: >-
+      Cada sistema puede ir en su propio renglón o seguido de otro en el mismo renglón
+      («… SIN POS FINAL FF 53/38 40/46 …» se separa en dos sistemas). Un frente que viene
+      después de «extiende» o «asociado» queda unido al sistema anterior.
+    filas:
+      - {escribe: "anticiclón · anti · alta", significa: "ANTICICLON"}
+      - {escribe: "depresión · dep · depre · baja", significa: "DEPRESION"}
+      - {escribe: "frente frío · FF · CFNT", significa: "CFNT"}
+      - {escribe: "frente cálido · FC · WFNT", significa: "WFNT"}
+      - {escribe: "frente ocluido · FO · OFNT", significa: "OFNT"}
+      - {escribe: "frente estacionario · FE", significa: "Frente estacionario"}
+      - {escribe: "fuerte gradiente bárico · FGB", significa: "FUERTE GRADIENTE BARICO"}
+      - {escribe: "ciclogénesis · vaguada · eje de cuña", significa: "CICLOGENESIS · VAGUADA · EJE DE CUÑA"}
+      - {escribe: "se mueve al E · mov E · se desplaza hacia el E · sin movimiento", significa: "MOV E · STNR"}
+      - {escribe: "se intensifica · se debilita · se profundiza · se rellena · sin cambios", significa: "INTSF · WKN · DPN · FLN · NC"}
+      - {escribe: "sin pos final · SPF · con pos final · CPF", significa: "Con o sin posición esperada (EXP)"}
+      - {escribe: "32-45 · 53/38 · 32S 45W · 5338", significa: "32S 45W (latitud S, longitud W)"}
+
+  - titulo: Avisos de temporal
+    filas:
+      - {escribe: "489: … · aviso 489 …", significa: "Aviso con número"}
+      - {escribe: "nuevo: … · aviso nuevo", significa: "Aviso nuevo: toma el número siguiente"}
+      - {escribe: "actualiza · se actualiza · sigue vigente · se mantiene · continúa · ratifica · renueva", significa: "Actualización (conserva el número)"}
+      - {escribe: "cese · cesa", significa: "CESE"}
+      - {escribe: "fuera · afuera", significa: "FUERA DEL AREA"}
+      - {escribe: "provoca · provocará", significa: "PROVOCA · PROVOCARA"}
+      - {escribe: "en 35-40S 20-30W · entre … · nombre de la zona", significa: "Área afectada"}
+      - {escribe: "a partir del 2800Z · desde el 28/00 · hasta el 28/12", significa: "A PARTIR DEL / HASTA EL"}
+
+  - titulo: Partes de un área
+    filas:
+      - {escribe: "al este de 30 · E de 30W", significa: "E DE 30W"}
+      - {escribe: "al sur de 45 y W de 30", significa: "S DE 45S - W DE 30W"}
+      - {escribe: "NE del área · al norte de la zona", significa: "NE DEL AREA"}
+      - {escribe: "resto · resto del área", significa: "RESTO DEL AREA"}
+      - {escribe: "entera · toda el área", significa: "Toda el área (solo si el área no está dividida)"}
+      - {escribe: "ídem · igual · copiar de …", significa: "Copia el pronóstico de otra zona"}

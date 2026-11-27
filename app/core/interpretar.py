@@ -124,7 +124,7 @@ def _esquema(cat: dict) -> dict:
     aviso = O({"numero": S(), "estado": E(cat["avisos"]["estados"]), "causa": E(cat["avisos"]["causas"]),
                "detalle": S(description="Presión y/o posición de la causa, ej. '997HPA 52S 43W'; texto si causa=OTRA"),
                "detalle_en": S(description="Traducción si causa=OTRA; si no, vacío"),
-               "verbo": E(cat["avisos"]["verbo"]), "fuerza": E(["TEMPORAL", "TEMPORAL_FUERTE", "8", "9", "10", "11", "12"]),
+               "verbo": E(cat["avisos"]["verbo"]), "fuerza": E(["TEMPORAL", "TEMPORAL_FUERTE", "TEMPORAL_MUY_FUERTE", "8", "9", "10", "11", "12"]),
                "dir": E(dirs), "rafagas": {"type": "boolean"}, "zonas": A(E(zonas)),
                "coords": S(description="ej. 45S-50S 30W-40W, o vacío"),
                "desde": S(description="DD/HHMM o vacío"), "hasta": S(description="DD/HHMM o vacío"),
@@ -163,7 +163,7 @@ CONVENCIONES
 
 VIENTO
 - Fuerza: términos {escala}. "Fuertes a regulares" = ["FUERTES","REGULARES"] (respetá el orden).
-  "Muy fuertes" = MUY_FUERTES. "Temporal fuerte" = TEMPORAL_FUERTE. Si el texto da números, usá números.
+  "Muy fuertes" = MUY_FUERTES. "Temporal fuerte" = TEMPORAL_FUERTE. "Temporal muy fuerte" = TEMPORAL_MUY_FUERTE. Si el texto da números, usá números.
 - Dirección: "del sector norte/sur/este/oeste (u O)" = "SECTOR N/S/E/W". "Del NW", "del SW" = "NW", "SW".
   "Direcciones variables" = "VRB".
 - Cambios, en orden: "cambiando en sentido horario" / "horario" = VEER; "antihorario" / "anti" = BACK;

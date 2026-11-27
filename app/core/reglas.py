@@ -26,18 +26,22 @@ ABREVIATURAS = {
     "fgb": "fuerte gradiente barico", "cpf": "con posicion final", "spf": "sin posicion final",
     "ext": "extiende", "antih": "antihorario", "anithorario": "antihorario", "incr": "aumentando",
     "decr": "disminuyendo", "des": "desmejorando", "desmej": "desmejorando",
+    "dep": "depresion", "lev": "leves", "fte": "fuertes", "ftes": "fuertes",
 }
 # Se aplican ANTES de expandir abreviaturas (dependen del contexto)
 PRE_ERRATAS = [
     (r"\bmej\.?\s+temp\w*", "mejoramientos temporarios"),
+    (r"\b(mejoramientos?|mejoras?)\s+temp\b\.?", r"\1 temporarios"),      # «MEJORAMIENTOS TEMP»
     (r"\bdir\.?\s+variables?\b", "direcciones variables"),
     (r"\bsin pos\.?\b", "sin posicion"), (r"\bpos\.?\s+final\b", "posicion final"),
     (r"\bsin mov\.?\b", "sin movimiento"), (r"\bfe\b", "frente estacionario"),
     (r"\bmat(?:inales?)?\b", ""),
 ]
-# Estilo de una sola letra (M, R, F, T, L, MF; VIS B A R OC M; CAMBIANDO AH / H)
+# Estilo de una sola letra (L, M, R, F, MF, T, TF, TMF; VIS B A R OC M MM; CON R; CAMBIANDO AH / H)
 LETRAS_VIS = {"b": "buena", "r": "regular", "m": "mala", "mm": "muy mala", "oc": "ocasionalmente"}
-LETRAS_FUERZA = {"m": "moderados", "r": "regulares", "f": "fuertes", "t": "temporal", "l": "leves", "mf": "muy fuertes"}
+LETRAS_FUERZA = {"l": "leves", "m": "moderados", "r": "regulares", "f": "fuertes", "mf": "muy fuertes",
+                 "t": "temporal", "tf": "temporal fuerte", "tmf": "temporal muy fuerte"}
+LETRA_FUERZA_RX = r"(?:tmf|tf|mf|[mrftl])"
 
 
 def _letras(t: str) -> str:
@@ -47,10 +51,10 @@ def _letras(t: str) -> str:
     t = re.sub(r"\bvis\s+((?:mm|[bmr])\b(?:\s+(?:a|oc|oca|ocnl)\s+(?:mm|[bmr])\b)*)", vis, t)
     t = re.sub(r"\b(cambiando|cambian|cambia|rotando|rota|rotan)\s+ah\b", r"\1 antihorario", t)
     t = re.sub(r"\b(cambiando|cambian|cambia|rotando|rota|rotan)\s+h\b", r"\1 horario", t)
-    sigue = (r"(?=\s+(?:a\s+(?:mf|[mrftl])\b|sector|sec|dir|direcciones|de\s+dir|del|con|so|se|ne|nw|no|sw|el|"
+    sigue = (rf"(?=\s+(?:a\s+{LETRA_FUERZA_RX}\b|sector|sec|dir|direcciones|de\s+dir\w*|del|con|so|se|ne|nw|no|sw|el|"
              r"cambiando|aumentando|disminuyendo|rotando)\b|\s*[,.]|\s*$)")
     for _ in range(2):   # «a r a f»: dos pasadas
-        t = re.sub(rf"(?:(?<=^)|(?<=[:.,]\s)|(?<=[:.,])|(?<=\ba\s)|(?<=\s))\b(mf|[mrftl])\b{sigue}",
+        t = re.sub(rf"(?:(?<=^)|(?<=[:.,]\s)|(?<=[:.,])|(?<=\ba\s)|(?<=\s))\b({LETRA_FUERZA_RX})\b{sigue}",
                    lambda m: LETRAS_FUERZA[m.group(1)], t)
     return t
 
@@ -71,10 +75,11 @@ ERRATAS = [
 ]
 
 FUERZAS = [  # (expresión, término de la escala) — las más largas primero
-    (r"temporal fuerte", "TEMPORAL_FUERTE"), (r"muy fuertes?", "MUY_FUERTES"), (r"temporal", "TEMPORAL"),
+    (r"temporal(?:es)? muy fuertes?", "TEMPORAL_MUY_FUERTE"), (r"temporal(?:es)? fuertes?", "TEMPORAL_FUERTE"),
+    (r"muy fuertes?", "MUY_FUERTES"), (r"temporal(?:es)?", "TEMPORAL"),
     (r"fuertes?", "FUERTES"), (r"regulares", "REGULARES"), (r"moderados?", "MODERADOS"), (r"leves?", "LEVES"),
 ]
-FUERZA_RX = r"(?:temporal fuerte|muy fuertes?|temporal|fuertes?|regulares|moderados?|leves?)"
+FUERZA_RX = r"(?:temporal muy fuertes?|temporal fuertes?|muy fuertes?|temporal|fuertes?|regulares|moderados?|leves?)"
 PUNTOS = {"n": "N", "norte": "N", "s": "S", "sur": "S", "e": "E", "este": "E", "o": "W", "w": "W",
           "oeste": "W", "ne": "NE", "noreste": "NE", "nordeste": "NE", "nw": "NW", "no": "NW", "noroeste": "NW",
           "se": "SE", "sudeste": "SE", "sureste": "SE", "sw": "SW", "so": "SW", "sudoeste": "SW", "suroeste": "SW"}
@@ -97,7 +102,8 @@ PROBABILIDADES = [
     (r"baja probabilidad(?:es)? de", "BAJA"),
     (r"probabilidad(?:es)?(?: de)?|probables?", "PROB"),
 ]
-CALIFICATIVOS = [(r"aislad[ao]s?", "AISLADAS"), (r"intermitentes?", "INTERMITENTES"),
+CALIFICATIVOS = [(r"aislad[ao]s?\s+(?:[ey]\s+)?intermitentes?|intermitentes?\s+(?:[ey]\s+)?aislad[ao]s?",
+                  "AISLADAS_INTERMITENTES"), (r"aislad[ao]s?", "AISLADAS"), (r"intermitentes?", "INTERMITENTES"),
                  (r"(?:algunas )?fuertes?", "FUERTES"), (r"dispers[ao]s?", "DISPERSAS"), (r"ocasionales", "OCASIONALES"),
                  (r"debil(?:es)?", "DEBILES")]
 MOMENTOS = [
@@ -208,6 +214,8 @@ HORA_PATRONES = [
                r"(?::(?P<m>\d{2}))?(?:\s*(?:hs|horas|utc|z)\b)?"),
     re.compile(r"\b(?P<pre>el|del|desde el|hasta el|hasta|a partir(?: del?)?)\s+(?P<d>\d{1,2})\s+(?P<h>\d{1,2})\s*z\b"),
     re.compile(r"(?P<pre>)\b(?P<d>\d{1,2})\s+(?P<h>\d{2})\s*z\b"),
+    # «el 2800z», «a partir del 271500z» (día y hora pegados, con Z)
+    re.compile(r"(?:\b(?P<pre>el|del|desde el|hasta el|hasta|a partir del?)\s+)?\b(?P<d>\d{2})(?P<h>\d{2})(?P<m>\d{2})?\s*z\b"),
 ]
 
 
@@ -434,7 +442,8 @@ def _direccion(texto):
 
 
 def _rafagas(texto):
-    m = re.search(rf"(?:con\s+)?{RAFAGAS_RX}(?:\s+(?:de\s+|del\s+)?(temporal fuerte|temporal|muy fuertes|fuertes))?", texto)
+    m = re.search(rf"(?:con\s+)?{RAFAGAS_RX}(?:\s+(?:de\s+|del\s+)?(temporal muy fuerte|temporal fuerte|temporal|muy fuertes|fuertes))?",
+                  texto)
     if not m:
         return "", "", texto
     resto = texto[:m.start()] + " " + texto[m.end():]
@@ -794,7 +803,9 @@ def avisos(lineas, alias_todos, dudas):
         if mov:
             a["detalle"] = (a["detalle"] + f" MOV {PUNTOS[mov.group(1)]}").strip()
         a["verbo"] = "futuro" if re.search(r"provocar(?:a|ia)\b", efecto) else "presente"
-        if re.search(r"temporal fuerte", efecto):
+        if re.search(r"temporal muy fuerte", efecto):
+            a["fuerza"] = "TEMPORAL_MUY_FUERTE"
+        elif re.search(r"temporal fuerte", efecto):
             a["fuerza"] = "TEMPORAL_FUERTE"
         elif re.search(r"fuerza\s+(\d{1,2})", efecto):
             a["fuerza"] = re.search(r"fuerza\s+(\d{1,2})", efecto).group(1)
@@ -829,6 +840,27 @@ def avisos(lineas, alias_todos, dudas):
 
 
 # ====================================================================== sinopsis
+# Palabras que arrancan un sistema nuevo aunque vengan en el mismo renglón que otro
+# («… SIN POS FINAL FF 53/38 40/46 …»). No incluye «alta»/«baja» (ambiguas a mitad de frase).
+NUEVO_SISTEMA = re.compile(r"\b(?:anticiclon|depresion|depre|ciclogenesis|fuerte gradiente barico|vaguada|"
+                           r"frente (?:fri[oa]|calido|caliente|ocluido|estacionario)|cfnt|wfnt|ofnt)\b")
+# Si el sistema viene después de estas palabras, es parte del anterior («extiende un frente frío»)
+ATADO_AL_ANTERIOR = re.compile(r"\b(?:extiende|extendiendo|asocia\w*|con|un|una|y|de|del|el|al|en|su|sus|navtex)\s*$")
+
+
+def separar_sistemas(linea: str) -> list[str]:
+    """Corta un renglón con varios sistemas seguidos en un renglón por sistema."""
+    cortes = [0]
+    for m in NUEVO_SISTEMA.finditer(linea):
+        previo = linea[cortes[-1]:m.start()]
+        if not previo.strip(" ,;.") or ATADO_AL_ANTERIOR.search(previo.rstrip(" ")):
+            continue
+        if "asocia" in linea[m.end():m.end() + 25]:        # «… frente frío asociado 50/40»
+            continue
+        cortes.append(m.start())
+    return [linea[a:b].strip(" ,;") for a, b in zip(cortes, cortes[1:] + [len(linea)]) if linea[a:b].strip(" ,;")]
+
+
 def _mov(texto):
     m = re.search(rf"(?:\bmov\b|mueve|moviendose|desplaza\w*)\s+(?:sin cambios?\s+)?(?:hacia\s+el\s+|al\s+|hacia\s+|el\s+)?"
                   rf"{PUNTO_RX}\b", texto)
@@ -858,6 +890,7 @@ def _posiciones_y_final(texto):
 
 
 def sinopsis(lineas, dudas):
+    lineas = [p for l in lineas for p in separar_sistemas(l)]
     bloques = []
     for l in lineas:
         cabeza = re.sub(r"^navtex\s+", "", l)[:28]
@@ -907,7 +940,7 @@ def sinopsis(lineas, dudas):
 
 def marcar_navtex(sistemas, avisos_, lineas, dudas):
     """Sección NAVTEX al final del borrador: marca los avisos y sistemas que nombra."""
-    for l in lineas:
+    for l in [p for l in lineas for p in separar_sistemas(l)]:
         ma = re.search(r"aviso\s*(\d{2,4})|\b(aviso nuevo|nuevo aviso|nuevo)\b", l)
         if ma:
             elegidos = [a for a in avisos_ if (ma.group(1) and a["numero"] == ma.group(1))
@@ -992,7 +1025,13 @@ def interpretar(cat: dict, texto: str) -> dict:
                 continue
             if marca_copia:
                 fuente_copia = zid
+            divididas = sum(1 for lab, _ in partes if lab and (division(lab) or {}).get("tipo") not in (None, "entera"))
             for lab, cuerpo in partes:
+                if divididas and lab and (division(lab) or {}).get("tipo") == "entera":
+                    dudas.append({"donde": donde, "texto": f"{lab}: {cuerpo}",
+                                  "motivo": f"La zona ya está dividida y además trae una parte «{lab.upper()}» "
+                                  "(toda el área): se omitió. ¿Falta el nombre de otra zona o sobra este renglón?"})
+                    continue
                 limpio, notas = sin_parentesis(cuerpo)
                 if any("sin proba" in n for n in notas):
                     i = cuerpo.find("(")

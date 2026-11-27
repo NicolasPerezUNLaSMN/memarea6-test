@@ -66,3 +66,28 @@ def test_19_9_plantilla_vacia():
     assert "AVISO 427 ACTUALIZADO: FUERTE GRADIENTE BARICO PROVOCA VIENTO FUERZA 8 DEL SECTOR N CON RAFAGAS " \
            "EN AREA SUDOESTE (50S- 60S Y 40W- 60W) HASTA EL 19/1800" in es
     assert "No hay pronóstico para ninguna zona." in validar.validar(CAT, b)[0]
+
+
+def test_palavecino_letras_y_sinopsis_en_un_renglon():
+    """Borrador escrito con letras (M, R, F, MF, T; VIS B/R/M; CON R) y la sinopsis amontonada."""
+    b, dudas, es = boletin("navegante_palavecino2.docx", "2026-11-27")
+    for linea in [
+        "ANTICICLON 1022HPA 32S 45W MOV E NC",
+        "CFNT LINEA 53S 38W 40S 46W MOV E NC",
+        "DEPRESION 1010HPA 45S 59W MOV E WKN",
+        "AVISO 491: FUERTE GRADIENTE BARICO MOV E PROVOCARA VIENTO FUERZA 8 DEL SECTOR W CON RAFAGAS ENTRE 45S-50S 30W-40W "
+        "A PARTIR DEL 28/0000",
+        "RIO DE LA PLATA EXTERIOR: SECTOR N 4/5 CON RAFAGAS VIS BUENA",
+        "GOLFO DE SAN JORGE(45ºS - 48ºS): VRB 5 CON RAFAGAS BACK SECTOR S VIS BUENA",
+        "PROB DE LLUVIAS AISLADAS Y SH MEJORAMIENTOS TEMPORARIOS VIS MALA OCNL REGULAR",
+        "AREA CENTRO ESTE (40S- 50S Y 20W- 40W) S DE 45S - W DE 30W: SECTOR W 7 CON RAFAGAS INCR 8 EL 28/0000",
+        "E DE 50W: SECTOR W 7/6 CON RAFAGAS PROB DE LLUVIAS AISLADAS INTERMITENTES VIS MALA A REGULAR",
+        "RESTO DEL AREA: VRB 5 BACK SECTOR N BAJA PROB DE LLUVIAS AISLADAS VIS REGULAR",
+    ]:
+        assert linea in es, linea
+    assert [(s["tipo"], s["navtex"]) for s in b["sinopsis"]] == [("ANTICICLON", True), ("CFNT", False),
+                                                                  ("DEPRESION", True)]
+    motivos = [d["motivo"] for d in dudas]
+    assert len(motivos) == 3, motivos
+    assert "No se encontró la visibilidad." in motivos              # Malvinas no la trae
+    assert any("«ENTERA»" in m for m in motivos)                    # «ENTERA» suelta en el área norte

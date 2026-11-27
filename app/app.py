@@ -16,7 +16,7 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core import almacen, catalogo, estadisticas, ia, interpretar, modelo, registro, render, validar  # noqa: E402
+from core import almacen, catalogo, estadisticas, ia, interpretar, modelo, palabras, registro, render, validar  # noqa: E402
 
 ESTATICO = Path(__file__).resolve().parent / "static"
 st.set_page_config(page_title="meMareaVI", page_icon=str(ESTATICO / "favicon.png"), layout="wide")
@@ -183,7 +183,7 @@ st.markdown(
     "</div></div>",
     unsafe_allow_html=True,
 )
-tab_bol, tab_fino = st.tabs(["Boletín", "Ajuste fino"])
+tab_bol, tab_fino, tab_pal = st.tabs(["Boletín", "Ajuste fino", "Palabras habilitadas"])
 
 # ======================================================================
 # BOLETÍN: texto claro → resultado
@@ -689,3 +689,23 @@ with tab_fino:
         ui_zonas(errores_fino)
     with s_tl:
         ui_textos_libres()
+
+with tab_pal:
+    secciones = palabras.cargar()
+    st.caption("Formas de escribir el borrador que la app reconoce. Mayúsculas, minúsculas y tildes dan igual. "
+               "Lo que no está acá puede no entenderse: la app lo avisa como duda.")
+    c_bus, c_md, c_csv = st.columns([3, 1, 1], vertical_alignment="bottom")
+    buscar = c_bus.text_input("Buscar", placeholder="ej.: temporal, MF, VIS, FF…", key="pal_buscar")
+    c_md.download_button("Descargar (.md)", palabras.a_markdown(secciones), "palabras_habilitadas.md",
+                         "text/markdown", use_container_width=True)
+    c_csv.download_button("Descargar (.csv)", palabras.a_csv(secciones), "palabras_habilitadas.csv",
+                          "text/csv", use_container_width=True)
+    visibles = palabras.filtrar(secciones, buscar)
+    if not visibles:
+        st.info("No hay ninguna palabra con ese texto.")
+    for s in visibles:
+        with st.expander(s["titulo"], expanded=bool(buscar.strip())):
+            if s.get("nota"):
+                st.caption(s["nota"])
+            st.dataframe([{"Se puede escribir": f["escribe"], "En el boletín": f["significa"]} for f in s["filas"]],
+                         hide_index=True, use_container_width=True)

@@ -98,6 +98,7 @@ viento:
       MUY_FUERTES: 7
       TEMPORAL: 8
       TEMPORAL_FUERTE: 9
+      TEMPORAL_MUY_FUERTE: 10
   direcciones: ["SECTOR N", "SECTOR E", "SECTOR S", "SECTOR W", "N", "NE", "E", "SE", "S", "SW", "W", "NW", "VRB"]
   cambios: ["BACK", "VEER", "INCR", "DECR"]
   tempo: "TEMPO"
@@ -138,6 +139,7 @@ fenomenos:
     "":            {es: "", en: ""}
     AISLADAS:      {es: "AISLADAS", en: "ISOL"}
     INTERMITENTES: {es: "INTERMITENTES", en: "INTERMITTENT"}
+    AISLADAS_INTERMITENTES: {es: "AISLADAS INTERMITENTES", en: "ISOL INTERMITTENT"}   # REVISAR
     FUERTES:       {es: "FUERTES", en: "HVY"}
     DISPERSAS:     {es: "DISPERSAS", en: "SCT"}
     OCASIONALES:   {es: "OCASIONALES", en: "OCNL"}
