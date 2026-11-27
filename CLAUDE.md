@@ -16,7 +16,7 @@ pip install -r requirements.txt pytest
 pytest tests                       # tienen que pasar todos antes de cualquier commit
 streamlit run app/app.py           # app local en http://localhost:8501
 python scripts/probar_borradores.py --fecha 2026-07-24 tests/borradores/navegante_24-7.docx
-docker compose up -d --build       # como corre en el servidor del SMN
+docker compose up -d --build       # solo si algún día hay servidor (hoy no se usa)
 ```
 
 ## Arquitectura
@@ -46,7 +46,7 @@ Texto claro → interpretación (reglas, sin IA) → datos del boletín → cont
 - **El intérprete no inventa.** Lo que no reconoce se omite y se informa como «duda».
 - **Una forma nueva de escribir de los pronosticadores** se suma a las tablas de `reglas.py`, con un caso en `tests/`.
 - **Los tests reproducen boletines reales** (`tests/ejemplos/`, `tests/borradores/`). Si un cambio rompe esa reproducción, es una regresión salvo que se decida otra cosa explícitamente.
-- Los datos viven en `DATA_DIR` (en Docker, `/data`): historial, `registro_avisos.json`, `estadisticas/*.csv`. No hay base de datos y corre una sola instancia.
+- Los datos viven en `DATA_DIR` (por defecto `./data`): archivo de boletines, `registro_avisos.json`, `estadisticas/*.csv`. No hay base de datos y corre una sola instancia.
 - `tests/borradores/` tiene borradores reales con nombres de pronosticadores: el repo tiene que ser privado.
 
 ## Decisiones ya tomadas (no volver a discutirlas sin pedido explícito)
@@ -61,7 +61,7 @@ Texto claro → interpretación (reglas, sin IA) → datos del boletín → cont
 - **Archivo**: se guardan solo los boletines finales (WWST01/02/03 + datos .json), nunca el borrador en texto claro (`almacen.NO_SE_GUARDA`).
 - **Vocabulario**: las formas nuevas (tablas de `reglas.py`, catálogo, `palabras_habilitadas.yaml`) las agrega el equipo de desarrollo, con test. Los pronosticadores solo consultan la lista desde la app.
 - **Ingreso**: login nativo de Streamlit con Microsoft y/o Google (`core/acceso.py`), activo solo si hay `.streamlit/secrets.toml`; acceso limitado por dominio/correo en `[acceso]`.
-- **Producción**: contenedor Docker en el SMN, una sola instancia, `data/` montada y con backup. Streamlit Cloud (repo personal `memarea6-test`) es solo para pruebas: su `data/` se borra en cada reinicio.
+- **Dónde corre**: no hay servidor del SMN ni está previsto por ahora. Corre en la máquina personal del desarrollador (`streamlit run`, datos en `./data`) y en Streamlit Cloud (repo personal `memarea6-test`, se actualiza con cada push a `master`; su `data/` se borra en cada reinicio, solo para pruebas). `Dockerfile` y `docker-compose.yml` quedan para un eventual servidor; no proponer pasos de despliegue en servidor.
 
 ## Documentación
 

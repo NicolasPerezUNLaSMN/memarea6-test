@@ -53,17 +53,29 @@ cada boletín.
 
 ## Puesta en marcha
 
-Requiere Docker con Docker Compose.
+Hoy la app corre en dos lugares (no hay servidor en el SMN):
 
-```bash
-cp .env.example .env        # completar si se quiere IA
-docker compose up -d --build
-```
+- **Una máquina personal**, con Python 3.11 o más:
 
-Queda en `http://<servidor>:8501`.
+  ```bash
+  python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\Activate.ps1
+  pip install -r requirements.txt
+  streamlit run app/app.py                            # http://localhost:8501
+  ```
 
-La app **no tiene usuarios ni contraseñas**: publicarla solo en la intranet,
-o detrás del proxy inverso / SSO que ya usen.
+  Los datos (archivo de boletines, numeración, estadísticas) quedan en
+  `./data/`: hacer copia de esa carpeta.
+
+- **Streamlit Cloud**, desde este repositorio, para pruebas: cada push a
+  `master` la actualiza. Su `data/` **se borra** en cada reinicio o
+  redespliegue (y si la app se duerme), así que no sirve como archivo.
+
+Sin `.streamlit/secrets.toml` la app no pide ingreso (ver «Ingreso con cuenta
+Microsoft o Google»). En Streamlit Cloud se puede, además, dejar la app
+privada e invitar por correo desde *Share*.
+
+`Dockerfile` y `docker-compose.yml` quedan listos por si más adelante se
+instala en un servidor (`docker compose up -d --build`, con `data/` montada).
 
 ## Boletín NAVTEX (WWST03)
 
@@ -199,9 +211,10 @@ las estadísticas. Sin ese archivo funciona como antes (nombre a mano).
 3. Limitar quién entra en `[acceso]` (`dominios = ["smn.gob.ar"]`, y cuentas
    sueltas en `correos`). Con Google es imprescindible.
 
-`secrets.toml` no se sube a git ni entra en la imagen Docker: en el servidor
-se monta como volumen (descomentar la línea en `docker-compose.yml`). En Streamlit Cloud se carga
-en *Settings → Secrets*.
+`secrets.toml` no se sube a git. En la máquina local va en `.streamlit/`; en
+Streamlit Cloud se carga en *Settings → Secrets* (con `redirect_uri =
+"https://<app>.streamlit.app/oauth2callback"`). Si algún día se usa Docker,
+tampoco entra en la imagen: se monta (descomentar la línea en `docker-compose.yml`).
 
 ## Probar la interpretación con borradores reales
 
@@ -233,8 +246,8 @@ bloquear, sobre:
 
 Todo está en `app/config/catalogo.yaml` (zonas, direcciones, fenómenos,
 visibilidad, causas de avisos, sistemas de la sinopsis, encabezados y
-reemplazos para los hielos). Con docker compose el archivo está montado:
-editarlo y reiniciar con `docker compose restart`.
+reemplazos para los hielos). La app vuelve a leer el catálogo cuando cambia
+el archivo: no hace falta reiniciarla.
 
 Después de cambiar el catálogo, correr los tests (ver abajo): reproducen dos
 boletines reales y avisan si un cambio altera el formato.
